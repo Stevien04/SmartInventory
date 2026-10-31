@@ -1,0 +1,60 @@
+name: SmartInventory CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-build:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar Repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Backend - Instalar dependencias
+        working-directory: ./backend
+        run: npm install
+
+      - name: Backend - Ejecutar pruebas unitarias
+        working-directory: ./backend
+        run: npm test
+
+      - name: Frontend - Instalar dependencias
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Frontend - Compilar para producción (Vite)
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://smartinventory-api.onrender.com/api' }}
+        run: npm run build
+
+  deploy:
+    name: Cloud Deploy to Render (Automated)
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar Deploy Webhook de Backend en Render
+        if: ${{ env.RENDER_BACKEND_HOOK != '' }}
+        env:
+          RENDER_BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+        run: |
+          echo "Disparando despliegue de Backend en Render..."
+          curl -f -X POST "$RENDER_BACKEND_HOOK"
+
+      - name: Disparar Deploy Webhook de Frontend en Render
+        if: ${{ env.RENDER_FRONTEND_HOOK != '' }}
+        env:
+          RENDER_FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+        run: |
+          echo "Disparando despliegue de Frontend en Render..."
+          curl -f -X POST "$RENDER_FRONTEND_HOOK"

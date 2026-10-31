@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 1. Base de Datos Documental: MongoDB
+  mongodb:
+    image: mongo:7.0
+    container_name: smartinventory-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: smartinventory
+    volumes:
+      - mongo_data:/data/db
+
+  # 2. Caché en Memoria: Redis
+  redis:
+    image: redis:7-alpine
+    container_name: smartinventory-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 3. Base de Datos de Grafos: Neo4j
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: smartinventory-neo4j
+    restart: always
+    ports:
+      - "7474:7474" # Interfaz Web
+      - "7687:7687" # Bolt Protocol
+    environment:
+      NEO4J_AUTH: neo4j/Password123*!
+    volumes:
+      - neo4j_data:/data
+
+  # 4. Monitoreo y Métricas: Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: smartinventory-prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+volumes:
+  mongo_data:
+  redis_data:
+  neo4j_data:
+  prometheus_data:

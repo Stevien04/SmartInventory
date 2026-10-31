@@ -1,0 +1,125 @@
+{
+  "usuarios": [
+    {
+      "id": "USR-ADMIN-001",
+      "nombre": "Administrador Principal",
+      "email": "admin@smartinventory.com",
+      "passwordHash": "$2b$10$wT0lYlH3o95VfV8jHspF1e582tIeR3oA07E/P3N2.1Yv1n2U3h54S",
+      "rol": "ADMINISTRADOR",
+      "estado": "ACTIVO",
+      "creadoEn": "2026-10-30T10:00:00Z"
+    },
+    {
+      "id": "USR-ALM-002",
+      "nombre": "Carlos Almacenero",
+      "email": "almacen@smartinventory.com",
+      "passwordHash": "$2b$10$wT0lYlH3o95VfV8jHspF1e582tIeR3oA07E/P3N2.1Yv1n2U3h54S",
+      "rol": "ALMACENERO",
+      "estado": "ACTIVO",
+      "creadoEn": "2026-10-30T10:30:00Z"
+    }
+  ],
+  "categorias": [
+    {
+      "id": "CAT-001",
+      "nombre": "Periféricos y Accesorios",
+      "descripcion": "Teclados, ratones, auriculares y accesorios de entrada",
+      "estado": "ACTIVO"
+    },
+    {
+      "id": "CAT-002",
+      "nombre": "Almacenamiento y Redes",
+      "descripcion": "Discos duros, memorias SSD, switches y routers",
+      "estado": "ACTIVO"
+    }
+  ],
+  "proveedores": [
+    {
+      "id": "PROV-001",
+      "nombre": "TechSupply Global S.A.",
+      "ruc": "20549812341",
+      "contacto": "ventas@techsupply.com",
+      "telefono": "+1 800-555-0199",
+      "estado": "ACTIVO"
+    }
+  ],
+  "productos": [
+    {
+      "id": "PROD-001",
+      "codigo": "SKU-KB-001",
+      "nombre": "Teclado Mecánico RGB Pro",
+      "descripcion": "Switch Blue, conexión USB-C y keycaps PBT",
+      "categoriaId": "CAT-001",
+      "proveedorId": "PROV-001",
+      "precioCompra": 45.0,
+      "precioVenta": 85.0,
+      "stockActual": 14,
+      "stockMinimo": 5,
+      "unidadMedida": "unidad",
+      "estado": "ACTIVO",
+      "creadoEn": "2026-10-30T11:00:00Z"
+    },
+    {
+      "id": "PROD-002",
+      "codigo": "SKU-SSD-002",
+      "nombre": "Disco Solido NVMe 1TB",
+      "descripcion": "Lectura 3500MB/s PCIe 3.0",
+      "categoriaId": "CAT-002",
+      "proveedorId": "PROV-001",
+      "precioCompra": 60.0,
+      "precioVenta": 99.0,
+      "stockActual": 3,
+      "stockMinimo": 5,
+      "unidadMedida": "unidad",
+      "estado": "ACTIVO",
+      "creadoEn": "2026-10-30T11:15:00Z"
+    },
+    {
+      "id": "PROD-003",
+      "codigo": "SKU-MOU-003",
+      "nombre": "Mouse Inalámbrico Ergonómico",
+      "descripcion": "Sensor óptico 4000 DPI con batería recargable",
+      "categoriaId": "CAT-001",
+      "proveedorId": "PROV-001",
+      "precioCompra": 18.0,
+      "precioVenta": 34.0,
+      "stockActual": 0,
+      "stockMinimo": 10,
+      "unidadMedida": "unidad",
+      "estado": "ACTIVO",
+      "creadoEn": "2026-10-30T11:30:00Z"
+    }
+  ],
+  "movimientos": [
+    {
+      "id": "MOV-INIT-001",
+      "operacionId": "op-init-001",
+      "productoId": "PROD-001",
+      "tipo": "ENTRADA",
+      "cantidad": 14,
+      "stockAnterior": 0,
+      "stockPosterior": 14,
+      "motivo": "Inventario inicial de apertura",
+      "usuarioId": "USR-ADMIN-001",
+      "creadoEn": "2026-10-30T11:05:00Z"
+    }
+  ],
+  "alertas": [
+    {
+      "id": "ALT-001",
+      "productoId": "PROD-002",
+      "tipo": "STOCK_BAJO",
+      "stockActual": 3,
+      "stockMinimo": 5,
+      "creadoEn": "2026-10-30T11:15:00Z"
+    },
+    {
+      "id": "ALT-002",
+      "productoId": "PROD-003",
+      "tipo": "AGOTADO",
+      "stockActual": 0,
+      "stockMinimo": 10,
+      "creadoEn": "2026-10-30T11:30:00Z"
+    }
+  ]
+}
