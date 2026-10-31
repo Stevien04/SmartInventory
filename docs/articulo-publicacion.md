@@ -19,8 +19,8 @@ En este artículo, detallamos la construcción y el despliegue automatizado de *
 
 * 💻 **Repositorio Público en GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory)
 * 🌐 **Frontend en Producción (Render Static Site):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
-* ⚙️ **API REST en Producción (Render Web Service):** [https://smartinventory-api.onrender.com/api/health](https://smartinventory-api.onrender.com/api/health)
-* 📊 **Métricas de Prometheus (/metrics):** [https://smartinventory-api.onrender.com/metrics](https://smartinventory-api.onrender.com/metrics)
+* ⚙️ **API REST en Producción (Render Web Service):** [https://smartinventory-api-29jb.onrender.com/api/health](https://smartinventory-api-29jb.onrender.com/api/health)
+* 📊 **Métricas de Prometheus (/metrics):** [https://smartinventory-api-29jb.onrender.com/metrics](https://smartinventory-api-29jb.onrender.com/metrics)
 * 🎥 **Video Demostrativo (< 5 min en YouTube / Redes):** [https://youtu.be/DEMO_SMARTINVENTORY](https://youtu.be/DEMO_SMARTINVENTORY)
 
 ---

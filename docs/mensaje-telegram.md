@@ -15,10 +15,10 @@ Estimado docente y compañeros, compartimos los entregables oficiales de SmartIn
   https://smartinventory-app.onrender.com
 
 • API REST en Producción (Render Web Service): 
-  https://smartinventory-api.onrender.com/api/health
+  https://smartinventory-api-29jb.onrender.com/api/health
 
 • Métricas de Prometheus (/metrics): 
-  https://smartinventory-api.onrender.com/metrics
+  https://smartinventory-api-29jb.onrender.com/metrics
 
 • 📝 Artículo Técnico Publicado (Dev.to / Hashnode / Medium): 
   https://dev.to/tu-usuario/construyendo-y-desplegando-smartinventory-con-mongodb-redis-neo4j-y-prometheus
