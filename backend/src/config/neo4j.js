@@ -44,23 +44,20 @@ export function getNeo4jSession() {
  * Registra o sincroniza un nodo de Producto con su Proveedor y Categoría en el Grafo
  */
 export async function sincronizarGrafoSuministro(productoId, nombreProducto, proveedorNombre, categoriaNombre) {
-  if (!driver) return;
+  if (!driver) return false;
 
   const session = driver.session();
   try {
+    // Nota: no se usa "WITH p" entre los MERGE. Ese WITH descartaba la variable
+    // `prov`, y el RETURN final fallaba con "Variable `prov` not defined".
     const query = `
       MERGE (p:Producto {id: $productoId})
       SET p.nombre = $nombreProducto, p.actualizadoEn = datetime()
-      
-      WITH p
       MERGE (prov:Proveedor {nombre: $proveedorNombre})
       MERGE (prov)-[:SUMINISTRA]->(p)
-      
-      WITH p
       MERGE (cat:Categoria {nombre: $categoriaNombre})
       MERGE (p)-[:PERTENECE_A]->(cat)
-      
-      RETURN p, prov, cat
+      RETURN p.id AS id
     `;
 
     await session.run(query, {
@@ -69,8 +66,10 @@ export async function sincronizarGrafoSuministro(productoId, nombreProducto, pro
       proveedorNombre: proveedorNombre || 'Proveedor General',
       categoriaNombre: categoriaNombre || 'General'
     });
+    return true;
   } catch (err) {
     console.warn('⚠️ [Neo4j] No se pudo sincronizar nodo en el grafo:', err.message);
+    return false;
   } finally {
     await session.close();
   }
