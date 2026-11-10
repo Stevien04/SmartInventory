@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SmartInventory — Exposición</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #131c2e;
+    --panel-2: #18233a;
+    --line: #26344f;
+    --text: #e8eefb;
+    --muted: #9fb0cf;
+    --blue: #3b82f6;
+    --blue-strong: #2563eb;
+    --blue-soft: #93c5fd;
+    --green: #34d399;
+    --amber: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--text); }
+
+  .slide {
+    width: 1920px; height: 1080px; position: relative; overflow: hidden;
+    padding: 90px 120px 110px;
+    background:
+      radial-gradient(1100px 700px at 100% 0%, rgba(37, 99, 235, .22), transparent 60%),
+      radial-gradient(900px 600px at 0% 100%, rgba(59, 130, 246, .10), transparent 60%),
+      var(--bg);
+    display: flex; flex-direction: column;
+  }
+  body.single .slide { display: none; }
+  body.single .slide.on { display: flex; }
+
+  /* Modo presentación: una diapositiva a la vez, ajustada a la ventana */
+  body.present { overflow: hidden; height: 100vh; background: #000; cursor: default; }
+  body.present .slide {
+    display: none; position: fixed; left: 50%; top: 50%;
+    transform: translate(-50%, -50%) scale(var(--k, 1)); transform-origin: center;
+  }
+  body.present .slide.on { display: flex; }
+
+  .kicker { font-size: 26px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--blue-soft); }
+  h1 { font-size: 132px; font-weight: 700; letter-spacing: -.02em; line-height: 1.02; }
+  h2 { font-size: 72px; font-weight: 700; letter-spacing: -.015em; line-height: 1.1; margin-top: 14px; }
+  .lead { font-size: 40px; line-height: 1.35; color: var(--muted); max-width: 1400px; }
+  .body { flex: 1; display: flex; flex-direction: column; justify-content: center; margin-top: 40px; }
+
+  .foot {
+    position: absolute; left: 120px; right: 120px; bottom: 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 22px; color: var(--muted);
+    border-top: 1px solid var(--line); padding-top: 18px;
+  }
+  .foot b { color: var(--text); font-weight: 600; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 16px; }
+  .chip {
+    font-size: 28px; padding: 12px 26px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  }
+
+  .cards { display: grid; gap: 32px; }
+  .cards.c3 { grid-template-columns: repeat(3, 1fr); }
+  .cards.c2 { grid-template-columns: repeat(2, 1fr); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 24px;
+    padding: 40px 42px;
+  }
+  .card .num {
+    width: 64px; height: 64px; border-radius: 16px; background: var(--blue-strong);
+    display: grid; place-items: center; font-size: 32px; font-weight: 700; margin-bottom: 28px;
+  }
+  .card h3 { font-size: 40px; font-weight: 700; line-height: 1.2; margin-bottom: 16px; }
+  .card p, .card li { font-size: 30px; line-height: 1.4; color: var(--muted); }
+  .card ul { list-style: none; display: grid; gap: 14px; }
+  .card li { padding-left: 34px; position: relative; }
+  .card li::before {
+    content: ""; position: absolute; left: 0; top: 16px;
+    width: 14px; height: 14px; border-radius: 50%; background: var(--blue);
+  }
+  .tag { font-size: 24px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--blue-soft); margin-bottom: 14px; }
+
+  code, pre { font-family: Consolas, "Cascadia Mono", monospace; }
+  code { color: var(--blue-soft); }
+  pre {
+    background: #0a101c; border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 26px; font-size: 25px; line-height: 1.5; color: #cfe0ff;
+    white-space: pre-wrap; margin-top: 22px;
+  }
+  pre .c { color: #6f84a8; }
+
+  /* Portada */
+  .cover { justify-content: center; }
+  .logo { display: flex; align-items: center; gap: 22px; margin-bottom: 44px; }
+  .logo svg { width: 92px; height: 92px; }
+  .logo span { font-size: 34px; font-weight: 600; color: var(--blue-soft); letter-spacing: .04em; }
+  .cover .lead { margin: 30px 0 50px; font-size: 46px; color: var(--text); }
+  .team { margin-top: 46px; font-size: 30px; color: var(--muted); }
+  .team b { color: var(--text); font-weight: 600; }
+
+  /* Arquitectura */
+  .layers { display: grid; gap: 0; }
+  .layer {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 22px;
+    padding: 26px 34px; display: grid; grid-template-columns: 330px 1fr; gap: 30px; align-items: center;
+  }
+  .layer .name { font-size: 26px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--blue-soft); line-height: 1.3; }
+  .boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .boxes.one { grid-template-columns: 1fr; }
+  .box { background: var(--panel-2); border: 1px solid var(--line); border-radius: 16px; padding: 20px 26px; }
+  .box b { display: block; font-size: 32px; font-weight: 700; margin-bottom: 6px; }
+  .box span { font-size: 26px; color: var(--muted); line-height: 1.35; }
+  .link { display: flex; align-items: center; justify-content: center; gap: 18px; height: 62px; font-size: 24px; color: var(--muted); }
+  .link i { width: 2px; height: 100%; background: var(--blue); display: block; }
+
+  /* Modelo */
+  .split { display: grid; grid-template-columns: 1.05fr 1fr; gap: 36px; align-items: stretch; }
+  .tree { font-size: 28px; line-height: 1.6; margin-top: 0; height: 100%; }
+  .tree b { color: #fff; }
+
+  /* Pasos */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 34px 32px; }
+  .step .who { font-size: 24px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--blue-soft); margin-bottom: 14px; }
+  .step p { font-size: 32px; line-height: 1.35; }
+  .url {
+    display: inline-block; font-family: Consolas, monospace; font-size: 38px; color: var(--blue-soft);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 32px; margin-bottom: 44px;
+  }
+
+  /* Pipeline */
+  .pipe { display: grid; grid-template-columns: 1fr 60px 1fr 60px 1fr 60px 1fr 60px 1fr; align-items: stretch; }
+  .stage { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 32px 26px; text-align: center; }
+  .stage.end { border-color: var(--green); }
+  .stage b { display: block; font-size: 34px; font-weight: 700; margin-bottom: 10px; }
+  .stage span { font-size: 25px; color: var(--muted); line-height: 1.35; }
+  .arrow { display: grid; place-items: center; font-size: 44px; color: var(--blue); }
+  .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 44px; }
+  .note { font-size: 28px; line-height: 1.4; color: var(--muted); border-left: 4px solid var(--blue); padding-left: 22px; }
+  .note b { color: var(--text); font-weight: 600; }
+
+  /* Métricas */
+  .metric { text-align: left; }
+  .metric .big { font-size: 112px; font-weight: 700; letter-spacing: -.02em; line-height: 1; color: #fff; margin: 10px 0 18px; }
+  .metric .big small { font-size: 50px; font-weight: 600; color: var(--blue-soft); }
+  .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 36px; }
+
+  /* Cierre */
+  .links { display: grid; gap: 20px; }
+  .linkrow { display: grid; grid-template-columns: 300px 1fr; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 24px 32px; }
+  .linkrow span { font-size: 26px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .linkrow code { font-size: 34px; }
+  .thanks { font-size: 64px; font-weight: 700; margin-top: 44px; }
+</style>
+<style>
+  /* Ajustes propios de SmartInventory sobre la plantilla */
+  :root {
+    --blue: #10b981;
+    --blue-strong: #059669;
+    --blue-soft: #6ee7b7;
+  }
+  .slide {
+    background:
+      radial-gradient(1100px 700px at 100% 0%, rgba(5, 150, 105, .22), transparent 60%),
+      radial-gradient(900px 600px at 0% 100%, rgba(16, 185, 129, .10), transparent 60%),
+      var(--bg);
+  }
+  .cards.c4 { grid-template-columns: repeat(4, 1fr); gap: 26px; }
+  .cards.c4 .card { padding: 34px 32px; }
+  .cards.c4 .card h3 { font-size: 40px; margin-bottom: 6px; }
+  .cards.c4 .card .kind { font-size: 24px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--blue-soft); margin-bottom: 20px; }
+  .cards.c4 .card p { font-size: 28px; }
+  .json { font-size: 26px; line-height: 1.5; margin-top: 18px; }
+  .json .k { color: var(--blue-soft); }
+  .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 40px; }
+  .level { border-radius: 18px; padding: 22px 28px; border: 1px solid var(--line); background: var(--panel); }
+  .level b { display: block; font-size: 30px; font-family: Consolas, monospace; margin-bottom: 6px; }
+  .level span { font-size: 26px; color: var(--muted); }
+  .level.red b { color: #f87171; }
+  .level.amber b { color: var(--amber); }
+  .level.green b { color: var(--green); }
+  .metrics { display: grid; gap: 18px; }
+  .metric-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 30px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 32px; }
+  .metric-row code { font-size: 28px; }
+  .metric-row span { font-size: 28px; color: var(--muted); }
+  .pipe.p4 { grid-template-columns: 1fr 60px 1fr 60px 1fr 60px 1fr; }
+  .steps.s5 { grid-template-columns: repeat(5, 1fr); gap: 20px; }
+  .steps.s5 .step { padding: 28px 24px; }
+  .steps.s5 .step p { font-size: 27px; }
+</style>
+</head>
+<body>
+
+<!-- 1. Portada -->
+<section class="slide cover">
+  <div class="logo">
+    <svg viewBox="0 0 92 92" fill="none">
+      <rect width="92" height="92" rx="22" fill="#059669"/>
+      <path d="M46 22l22 11v26L46 70 24 59V33l22-11z" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/>
+      <path d="M24 33l22 11 22-11M46 44v26" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/>
+    </svg>
+    <span>BASE DE DATOS II · PROYECTO NoSQL</span>
+  </div>
+  <h1>SmartInventory</h1>
+  <p class="lead">Gestión y control de inventarios con persistencia NoSQL políglota</p>
+  <div class="chips">
+    <span class="chip">MongoDB</span>
+    <span class="chip">Redis</span>
+    <span class="chip">Neo4j</span>
+    <span class="chip">Prometheus</span>
+    <span class="chip">React + Node.js</span>
+  </div>
+  <p class="team" id="team"></p>
+</section>
+
+<!-- 2. Problema y objetivo -->
+<section class="slide">
+  <div class="kicker">Problema y objetivo</div>
+  <h2>Un inventario que nunca se descuadra</h2>
+  <div class="body">
+    <div class="cards c3">
+      <div class="card">
+        <div class="num">1</div>
+        <h3>Control de existencias</h3>
+        <p>Entradas, salidas y ajustes. El stock solo cambia mediante movimientos y nunca queda en negativo.</p>
+      </div>
+      <div class="card">
+        <div class="num">2</div>
+        <h3>Alertas automáticas</h3>
+        <p>Cada producto se clasifica como normal, con stock bajo o agotado según su mínimo.</p>
+      </div>
+      <div class="card">
+        <div class="num">3</div>
+        <h3>Acceso por roles</h3>
+        <p>Administrador y almacenero, con sesión por token JWT y contraseñas cifradas con bcrypt.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Problema y objetivo</span></div>
+</section>
+
+<!-- 3. Persistencia políglota -->
+<section class="slide">
+  <div class="kicker">Persistencia políglota</div>
+  <h2>Cada motor NoSQL hace lo que mejor sabe</h2>
+  <div class="body">
+    <div class="cards c4">
+      <div class="card">
+        <h3>MongoDB</h3>
+        <div class="kind">Documentos</div>
+        <p>Catálogo de productos, usuarios y movimientos de inventario.</p>
+      </div>
+      <div class="card">
+        <h3>Redis</h3>
+        <div class="kind">Clave-valor</div>
+        <p>Caché del resumen del dashboard, con vencimiento de 60 segundos.</p>
+      </div>
+      <div class="card">
+        <h3>Neo4j</h3>
+        <div class="kind">Grafos</div>
+        <p>Relaciones entre proveedores, productos y categorías.</p>
+      </div>
+      <div class="card">
+        <h3>Prometheus</h3>
+        <div class="kind">Series de tiempo</div>
+        <p>Métricas de movimientos, latencia y stock, expuestas en <code>/metrics</code>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Persistencia políglota</span></div>
+</section>
+
+<!-- 4. Arquitectura -->
+<section class="slide">
+  <div class="kicker">Arquitectura</div>
+  <h2>Tres capas desplegadas en la nube</h2>
+  <div class="body">
+    <div class="layers">
+      <div class="layer">
+        <div class="name">Frontend</div>
+        <div class="boxes">
+          <div class="box"><b>React 18 + Vite + Tailwind CSS</b><span>Aplicación de una sola página</span></div>
+          <div class="box"><b>Render Static Site</b><span>Publicación con HTTPS</span></div>
+        </div>
+      </div>
+      <div class="link"><i></i><span>API REST · HTTPS · token JWT</span></div>
+      <div class="layer">
+        <div class="name">Backend</div>
+        <div class="boxes">
+          <div class="box"><b>Node.js + Express</b><span>Lógica de negocio y validaciones</span></div>
+          <div class="box"><b>Render Web Service</b><span>Roles, errores centralizados y CORS</span></div>
+        </div>
+      </div>
+      <div class="link"><i></i><span>Un cliente por cada motor</span></div>
+      <div class="layer">
+        <div class="name">Datos y métricas</div>
+        <div class="boxes" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="box"><b>MongoDB</b><span>Documentos</span></div>
+          <div class="box"><b>Redis</b><span>Caché</span></div>
+          <div class="box"><b>Neo4j</b><span>Grafo</span></div>
+          <div class="box"><b>Prometheus</b><span>Métricas</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Arquitectura</span></div>
+</section>
+
+<!-- 5. Modelo de documentos -->
+<section class="slide">
+  <div class="kicker">Modelo de documentos · MongoDB</div>
+  <h2>El producto guarda el stock; el movimiento, la historia</h2>
+  <div class="body">
+    <div class="cards c2">
+      <div class="card">
+        <div class="tag">Producto</div>
+        <pre class="json">{
+  <span class="k">"id"</span>: "PROD-001",
+  <span class="k">"codigo"</span>: "SKU-0001",
+  <span class="k">"nombre"</span>: "Teclado mecánico",
+  <span class="k">"categoriaId"</span>: "CAT-001",
+  <span class="k">"proveedorId"</span>: "PROV-001",
+  <span class="k">"stockActual"</span>: 8,
+  <span class="k">"stockMinimo"</span>: 5,
+  <span class="k">"estado"</span>: "ACTIVO"
+}</pre>
+      </div>
+      <div class="card">
+        <div class="tag">Movimiento</div>
+        <pre class="json">{
+  <span class="k">"id"</span>: "MOV-001",
+  <span class="k">"operacionId"</span>: "op-unique-id",
+  <span class="k">"productoId"</span>: "PROD-001",
+  <span class="k">"tipo"</span>: "SALIDA",
+  <span class="k">"cantidad"</span>: 2,
+  <span class="k">"stockAnterior"</span>: 10,
+  <span class="k">"stockPosterior"</span>: 8,
+  <span class="k">"usuarioId"</span>: "USR-001"
+}</pre>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Modelo de documentos</span></div>
+</section>
+
+<!-- 6. Movimiento atómico -->
+<section class="slide">
+  <div class="kicker">Regla de negocio central</div>
+  <h2>Un movimiento: todo o nada</h2>
+  <div class="body">
+    <div class="pipe p4">
+      <div class="stage"><b>Validar</b><span>La salida no puede superar el stock disponible</span></div>
+      <div class="arrow">→</div>
+      <div class="stage"><b>Transacción</b><span>Actualiza el stock y guarda el movimiento juntos</span></div>
+      <div class="arrow">→</div>
+      <div class="stage"><b>Caché</b><span>Borra el resumen guardado del dashboard</span></div>
+      <div class="arrow">→</div>
+      <div class="stage end"><b>Métrica</b><span>Cuenta el movimiento como exitoso o fallido</span></div>
+    </div>
+    <div class="levels">
+      <div class="level red"><b>AGOTADO</b><span>El stock llegó a cero</span></div>
+      <div class="level amber"><b>STOCK_BAJO</b><span>El stock es menor o igual al mínimo</span></div>
+      <div class="level green"><b>NORMAL</b><span>El stock está por encima del mínimo</span></div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Movimientos y alertas</span></div>
+</section>
+
+<!-- 7. Caché y grafo -->
+<section class="slide">
+  <div class="kicker">Redis y Neo4j</div>
+  <h2>Velocidad en la lectura, relaciones en el grafo</h2>
+  <div class="body">
+    <div class="cards c2">
+      <div class="card">
+        <div class="tag">Redis · caché del dashboard</div>
+        <ul>
+          <li>Si el resumen está en caché, se responde desde ahí.</li>
+          <li>Si no, se calcula en MongoDB y se guarda 60 segundos.</li>
+          <li>Cada movimiento o cambio de producto borra la clave.</li>
+        </ul>
+        <pre>cache:dashboard_resumen</pre>
+      </div>
+      <div class="card">
+        <div class="tag">Neo4j · grafo de suministro</div>
+        <ul>
+          <li>Al crear un producto se sincroniza su nodo.</li>
+          <li>Permite preguntar qué provee cada proveedor.</li>
+        </ul>
+        <pre>(:Proveedor)-[:SUMINISTRA]->(:Producto)
+(:Producto)-[:PERTENECE_A]->(:Categoria)</pre>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Caché y grafo</span></div>
+</section>
+
+<!-- 8. Observabilidad -->
+<section class="slide">
+  <div class="kicker">Observabilidad · Prometheus</div>
+  <h2>El sistema informa de su propio estado</h2>
+  <div class="body">
+    <div class="metrics">
+      <div class="metric-row"><code>smartinventory_movimientos_total</code><span>Movimientos por tipo y resultado</span></div>
+      <div class="metric-row"><code>smartinventory_http_request_duration_seconds</code><span>Latencia de cada ruta de la API</span></div>
+      <div class="metric-row"><code>smartinventory_productos_stock_bajo_total</code><span>Productos en el mínimo o por debajo</span></div>
+      <div class="metric-row"><code>smartinventory_productos_agotados_total</code><span>Productos sin existencias</span></div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Observabilidad</span></div>
+</section>
+
+<!-- 9. Demo -->
+<section class="slide">
+  <div class="kicker">Demostración en vivo</div>
+  <h2>Del inicio de sesión a la métrica</h2>
+  <div class="body">
+    <div><span class="url">smartinventory-app.onrender.com</span></div>
+    <div class="steps s5">
+      <div class="step"><div class="who">1 · Sesión</div><p>Iniciar sesión como administrador.</p></div>
+      <div class="step"><div class="who">2 · Dashboard</div><p>Ver indicadores y alertas de stock.</p></div>
+      <div class="step"><div class="who">3 · Rechazo</div><p>Intentar una salida mayor al stock.</p></div>
+      <div class="step"><div class="who">4 · Salida</div><p>Registrar una salida válida.</p></div>
+      <div class="step"><div class="who">5 · Métricas</div><p>Abrir <code>/metrics</code> y ver el contador.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Demostración</span></div>
+</section>
+
+<!-- 10. CI/CD -->
+<section class="slide">
+  <div class="kicker">CI/CD con GitHub Actions</div>
+  <h2>Solo se despliega lo que pasa las pruebas</h2>
+  <div class="body">
+    <div class="pipe p4">
+      <div class="stage"><b>Push</b><span>a la rama <code>main</code></span></div>
+      <div class="arrow">→</div>
+      <div class="stage"><b>Probar</b><span>Pruebas unitarias del backend</span></div>
+      <div class="arrow">→</div>
+      <div class="stage"><b>Compilar</b><span>Frontend con Vite</span></div>
+      <div class="arrow">→</div>
+      <div class="stage end"><b>Desplegar</b><span>API y frontend en Render</span></div>
+    </div>
+    <div class="notes">
+      <div class="note"><b>Workflow</b><br><code>.github/workflows/deploy.yml</code></div>
+      <div class="note"><b>Seis pruebas unitarias</b><br>Cálculo de stock y niveles de alerta</div>
+      <div class="note"><b>Repositorio público en GitHub</b><br><code>Stevien04/SmartInventory</code></div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>CI/CD</span></div>
+</section>
+
+<!-- 11. Cierre -->
+<section class="slide">
+  <div class="kicker">Conclusiones</div>
+  <h2>Varios motores NoSQL, cada uno en su papel</h2>
+  <div class="body">
+    <div class="links">
+      <div class="linkrow"><span>Repositorio</span><code>github.com/Stevien04/SmartInventory</code></div>
+      <div class="linkrow"><span>Aplicación</span><code>smartinventory-app.onrender.com</code></div>
+      <div class="linkrow"><span>Métricas</span><code>smartinventory-api-29jb.onrender.com/metrics</code></div>
+    </div>
+    <p class="thanks">¡Muchas gracias! ¿Preguntas?</p>
+  </div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Conclusiones</span></div>
+</section>
+
+<script>
+  // Escribe aquí los nombres de los integrantes; si queda vacío, la portada no muestra la línea.
+  const INTEGRANTES = ['Stevie Marca Aguilar'];
+
+  const team = document.getElementById('team');
+  if (INTEGRANTES.length) {
+    team.innerHTML = '<b>' + (INTEGRANTES.length > 1 ? 'Integrantes' : 'Expositor') + ':</b> ' + INTEGRANTES.join(' · ');
+  } else {
+    team.remove();
+  }
+
+  const slides = document.querySelectorAll('.slide');
+  const n = parseInt(new URLSearchParams(location.search).get('s'), 10);
+
+  if (n) {
+    // ?s=N muestra solo la diapositiva N a tamaño real (lo usa el script de exportación).
+    document.body.classList.add('single');
+    if (slides[n - 1]) slides[n - 1].classList.add('on');
+  } else {
+    // Sin parámetros: modo presentación.
+    // Flecha derecha / espacio / clic: siguiente. Flecha izquierda: anterior. 1-9: ir a esa diapositiva.
+    document.body.classList.add('present');
+    let i = Math.min(Math.max((parseInt(location.hash.slice(1), 10) || 1) - 1, 0), slides.length - 1);
+
+    const fit = () => {
+      const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+      document.body.style.setProperty('--k', k);
+    };
+    const show = (j) => {
+      i = Math.min(Math.max(j, 0), slides.length - 1);
+      slides.forEach((s, idx) => s.classList.toggle('on', idx === i));
+      history.replaceState(null, '', '#' + (i + 1));
+    };
+
+    addEventListener('resize', fit);
+    addEventListener('keydown', (e) => {
+      if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); show(i + 1); }
+      else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+      else if (/^[1-9]$/.test(e.key)) show(parseInt(e.key, 10) - 1);
+    });
+    addEventListener('click', () => show(i + 1));
+
+    fit();
+    show(i);
+  }
+</script>
+</body>
+</html>
