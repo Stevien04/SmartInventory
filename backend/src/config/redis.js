@@ -26,10 +26,17 @@ export function initRedis() {
           maxRetriesPerRequest: 1
         });
 
-    redisClient.connect()
+    const client = redisClient;
+
+    // Sin este manejador, ioredis escribe "Unhandled error event" en cada reintento.
+    client.on('error', () => {});
+
+    client.connect()
       .then(() => console.log('✅ [Redis] Conectado exitosamente a Redis Cloud / In-Memory Store'))
       .catch((err) => {
         console.warn(`⚠️ [Redis] No se pudo conectar a Redis (${err.message}). Usando caché en memoria.`);
+        // Cortar los reintentos: si las credenciales son incorrectas, no se van a arreglar solas.
+        client.disconnect();
         redisClient = null;
       });
 

@@ -33,14 +33,16 @@ export async function sincronizarCatalogoEnGrafo() {
   const nombreProveedor = new Map(proveedores.map((p) => [p.id, p.nombre]));
   const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
 
+  let sincronizados = 0;
   for (const producto of productos) {
-    await sincronizarGrafoSuministro(
+    const ok = await sincronizarGrafoSuministro(
       producto.id,
       producto.nombre,
       nombreProveedor.get(producto.proveedorId),
       nombreCategoria.get(producto.categoriaId)
     );
+    if (ok) sincronizados += 1;
   }
 
-  return productos.length;
+  return sincronizados;
 }
