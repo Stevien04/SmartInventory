@@ -2,26 +2,27 @@
 
 Cada paso dice **qué mostrar** en pantalla y **qué decir** mientras se ve. El texto sigue el orden de lo que aparece en cada diapositiva.
 
-Duración aproximada: 8 minutos. Si tienes menos tiempo, omite los pasos 5 y 7.
+Duración aproximada: 9 minutos. Si tienes menos tiempo, omite los pasos 5 y 7.
 
 ---
 
 ## Antes de exponer
 
-### 1. Deja cuatro pestañas, en este orden
+### 1. Deja cinco pestañas, en este orden
 
 | Pestaña | Qué abrir | Atajo |
 |---|---|---|
 | 1 | `exposicion/slides.html` (doble clic sobre el archivo) | `Ctrl + 1` |
 | 2 | `https://smartinventory-app.onrender.com` | `Ctrl + 2` |
 | 3 | `https://smartinventory-api-29jb.onrender.com/metrics` | `Ctrl + 3` |
-| 4 | `https://github.com/Stevien04/SmartInventory/actions` | `Ctrl + 4` |
+| 4 | `https://console.neo4j.io` → menú **Query** | `Ctrl + 4` |
+| 5 | `https://github.com/Stevien04/SmartInventory/actions` | `Ctrl + 5` |
 
 Cierra todas las demás pestañas.
 
 ### 2. Pon el navegador en pantalla completa
 
-Pulsa `F11`. Desaparecen las pestañas y la barra de direcciones. Los atajos `Ctrl + 1` a `Ctrl + 4` siguen funcionando.
+Pulsa `F11`. Desaparecen las pestañas y la barra de direcciones. Los atajos `Ctrl + 1` a `Ctrl + 5` siguen funcionando.
 
 ### 3. Aprende a mover las diapositivas
 
@@ -34,6 +35,8 @@ Se ve una sola diapositiva a la vez:
 ### 4. Despierta la aplicación
 
 Abre las pestañas 2 y 3 unos dos minutos antes. El servidor gratuito de Render se duerme y la primera carga tarda cerca de un minuto.
+
+En la pestaña 4, inicia sesión en la consola de Neo4j y comprueba que la instancia `Instance01` diga «Running». Las instancias gratuitas se pausan tras unos días sin uso: si aparece pausada, pulsa «···» → «Resume Instance» y espera un minuto.
 
 ### 5. Prepara los datos de la demo
 
@@ -66,7 +69,7 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 **MOSTRAR:** pulsa `→`. Diapositiva 3, con cuatro tarjetas, una por motor.
 
 **DECIR:**
-> Estos son los cuatro motores, de izquierda a derecha. MongoDB es la base documental: guarda el catálogo de productos, los usuarios y los movimientos. Redis es un almacén clave-valor y se usa como caché del resumen del dashboard. Neo4j es una base de grafos, para las relaciones entre proveedores, productos y categorías. Y Prometheus guarda series de tiempo: las métricas del sistema.
+> Estos son los cuatro motores, de izquierda a derecha. MongoDB Atlas es la base documental: guarda el catálogo de productos, los usuarios y los movimientos. Redis Cloud es un almacén clave-valor y se usa como caché del resumen del dashboard. Neo4j AuraDB es una base de grafos, para las relaciones entre proveedores, productos y categorías. Y Prometheus guarda series de tiempo: las métricas del sistema.
 
 ---
 
@@ -152,16 +155,33 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 
 ---
 
-### Paso 12 — CI/CD · 50 s
+### Paso 12 — Demo del grafo · 40 s
 
-**MOSTRAR:** pulsa `Ctrl + 1` y avanza con `→` hasta la diapositiva 10. Después pulsa `Ctrl + 4` para mostrar GitHub Actions y abre la ejecución más reciente.
+**MOSTRAR:** pulsa `Ctrl + 4` para ir a la consola de Neo4j, en **Query**.
+
+1. Pega esta consulta y pulsa **Run**:
+
+```
+MATCH (prov:Proveedor)-[:SUMINISTRA]->(p:Producto)-[:PERTENECE_A]->(c:Categoria) RETURN prov, p, c
+```
+
+2. Señala los nodos: proveedores, productos y categorías, unidos por flechas.
+
+**DECIR:**
+> Este es el grafo de suministro en Neo4j AuraDB. Cada producto está unido a su proveedor por la relación «suministra» y a su categoría por «pertenece a». El backend lo mantiene sincronizado con el catálogo de MongoDB. Aquí se puede preguntar, por ejemplo, qué productos dependen de un mismo proveedor.
+
+---
+
+### Paso 13 — CI/CD · 50 s
+
+**MOSTRAR:** pulsa `Ctrl + 1` y avanza con `→` hasta la diapositiva 10. Después pulsa `Ctrl + 5` para mostrar GitHub Actions y abre la ejecución más reciente.
 
 **DECIR:**
 > El despliegue está automatizado con GitHub Actions. Cada push a la rama main ejecuta las pruebas unitarias del backend, que verifican el cálculo de stock y los niveles de alerta, y compila el frontend. Solo si todo pasa, se despliegan la API y el frontend en Render. Aquí se ven las ejecuciones en el repositorio público.
 
 ---
 
-### Paso 13 — Conclusiones · 30 s
+### Paso 14 — Conclusiones · 30 s
 
 **MOSTRAR:** pulsa `Ctrl + 1` y avanza con `→` hasta la diapositiva 11.
 
@@ -185,30 +205,29 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 | 9 | 1 | Diapositiva 9: entrada a la demo | 0:10 |
 | 10 | 2 | App: sesión, rechazo y salida válida | 2:00 |
 | 11 | 3 | `/metrics`: contador de movimientos | 0:30 |
-| 12 | 1 y 4 | Diapositiva 10 y GitHub Actions | 0:50 |
-| 13 | 1 | Diapositiva 11: conclusiones | 0:30 |
+| 12 | 4 | Neo4j: grafo de suministro | 0:40 |
+| 13 | 1 y 5 | Diapositiva 10 y GitHub Actions | 0:50 |
+| 14 | 1 | Diapositiva 11: conclusiones | 0:30 |
 
 ---
 
-## Lo que debes saber antes de exponer
+## Estado en producción
 
-Hoy, en producción, **solo MongoDB y Prometheus están realmente conectados**. La comprobación de estado de la API (`/api/health`) responde:
+Los cuatro motores están conectados en la nube. La comprobación de estado de la API (`/api/health`) responde:
 
-| Motor | Estado en producción | Qué significa |
+| Motor | Estado | Servicio |
 |---|---|---|
-| MongoDB | `CONNECTED` | Los datos se guardan de verdad en MongoDB Atlas |
-| Prometheus | `ACTIVE (/metrics)` | Las métricas se exponen y se pueden consultar |
-| Redis | `IN_MEMORY_FALLBACK` | No hay un servidor Redis conectado; la caché vive en la memoria del backend |
-| Neo4j | `STANDBY/LOCAL` | No hay una base Neo4j conectada; la sincronización del grafo no se ejecuta |
+| MongoDB | `CONNECTED` | MongoDB Atlas |
+| Redis | `CONNECTED` | Redis Cloud, base `smartinventory-cache` (plan gratuito) |
+| Neo4j | `CONNECTED` | Neo4j AuraDB, instancia `Instance01` (plan gratuito) |
+| Prometheus | `ACTIVE (/metrics)` | Métricas expuestas por el backend |
 
-Por eso el guion describe Redis y Neo4j por lo que hace el código, sin afirmar que haya un Redis Cloud o un Neo4j AuraDB en producción, y no incluye mostrar el navegador de Neo4j.
+Si quieres mostrar la evidencia, abre `https://smartinventory-api-29jb.onrender.com/api/health` en una pestaña.
 
-Tienes dos caminos:
+Dos cuidados para el día de la exposición:
 
-1. **Conectarlos antes de exponer.** Crea una base gratuita en Redis Cloud y otra en Neo4j AuraDB, y agrega en Render las variables `REDIS_URL`, `NEO4J_URI`, `NEO4J_USERNAME` y `NEO4J_PASSWORD`. Cuando `/api/health` muestre `CONNECTED` en los cuatro, puedes decir que todo corre en la nube.
-2. **Exponer tal como está y decirlo con claridad.** Si preguntan, la respuesta honesta está abajo.
-
-Ten en cuenta también que el indicador de origen del dashboard dice «Redis In-Memory Cache» aunque la caché esté en la memoria del backend. No lo presentes como prueba de que hay un Redis conectado.
+1. **Neo4j se pausa solo.** Las instancias gratuitas de AuraDB se pausan tras unos días sin uso y se borran tras 30 días de inactividad. Entra a la consola ese día y reanúdala si hace falta. Después reinicia la API en Render (**Manual Deploy → Deploy latest commit**): el backend solo conecta con Neo4j al arrancar.
+2. **Comprueba el estado antes de empezar.** Si `/api/health` no muestra `CONNECTED` en Redis o en Neo4j, no afirmes que están en la nube: el backend sigue funcionando con una caché en memoria y sin grafo, y eso es lo que debes decir.
 
 ---
 
@@ -221,7 +240,7 @@ Ten en cuenta también que el indicador de origen del dashboard dice «Redis In-
 > El backend sigue funcionando: usa una caché en memoria como respaldo y, si tampoco hay dato, consulta MongoDB. La caché acelera, pero no es la fuente de verdad.
 
 **¿Redis y Neo4j están desplegados en la nube?**
-> La integración está implementada en el backend. En el despliegue actual, la caché usa la memoria del servidor como respaldo y el grafo no está conectado; MongoDB y las métricas sí están activos. Se puede comprobar en la ruta de estado de la API.
+> Sí. La caché está en Redis Cloud y el grafo en Neo4j AuraDB, ambos en su plan gratuito. Se puede comprobar en la ruta de estado de la API, que muestra los cuatro motores conectados.
 
 **¿Cómo se evita el stock negativo?**
 > La validación ocurre en el backend, dentro de la misma transacción que actualiza el stock y guarda el movimiento. Si la salida supera el stock, la transacción se cancela y no se guarda nada.
