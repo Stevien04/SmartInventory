@@ -51,7 +51,7 @@ export default function Sidebar({ currentPage, setCurrentPage, userRole }) {
 
       <div className="bg-slate-800/60 p-3 rounded-lg border border-slate-700/50 text-xs text-slate-400 space-y-1">
         <p className="font-semibold text-slate-300">Entorno en Producción</p>
-        <p>Motor: Couchbase Capella</p>
+        <p>MongoDB · Redis · Neo4j</p>
         <p>CI/CD: GitHub Actions</p>
         <p>Hosting: Render PaaS</p>
       </div>

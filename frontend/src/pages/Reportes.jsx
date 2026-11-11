@@ -50,7 +50,7 @@ export default function Reportes() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Reportes de Existencias y Valorización</h1>
           <p className="text-sm text-slate-500">
-            Consultas N1QL calculadas en Couchbase Capella. Exportación a CSV disponible.
+            Consultas calculadas en MongoDB Atlas. Exportación a CSV disponible.
           </p>
         </div>
 

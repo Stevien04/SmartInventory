@@ -12,7 +12,7 @@ export default function Usuarios() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Gestión de Usuarios</h1>
         <p className="text-sm text-slate-500">
-          Control de acceso basado en roles (RBAC). Colección `usuarios` en Couchbase Capella.
+          Control de acceso basado en roles (RBAC). Colección `usuarios` en MongoDB Atlas.
         </p>
       </div>
 
