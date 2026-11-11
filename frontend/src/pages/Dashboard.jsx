@@ -28,7 +28,7 @@ export default function Dashboard({ setCurrentPage }) {
   }, []);
 
   if (loading) {
-    return <div className="p-8 text-slate-500">Consultando datos en Couchbase Capella...</div>;
+    return <div className="p-8 text-slate-500">Consultando datos en MongoDB Atlas...</div>;
   }
 
   return (
@@ -58,7 +58,7 @@ export default function Dashboard({ setCurrentPage }) {
           value={resumen?.totalProductosActivos || 0}
           icon={Package}
           colorClass="bg-blue-50 text-blue-600"
-          subtitle="En catálogo Couchbase"
+          subtitle="En catálogo MongoDB"
         />
         <DashboardCard
           title="Unidades en Stock"

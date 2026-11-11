@@ -78,7 +78,7 @@ export default function Movimientos() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Movimientos de Inventario</h1>
         <p className="text-sm text-slate-500">
-          Transacciones atómicas en Couchbase Capella. Bloqueo estricto contra existencias negativas.
+          Transacciones atómicas en MongoDB Atlas. Bloqueo estricto contra existencias negativas.
         </p>
       </div>
 

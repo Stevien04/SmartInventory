@@ -39,7 +39,7 @@ export default function Proveedores({ userRole }) {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Proveedores</h1>
         <p className="text-sm text-slate-500">
-          Colección `proveedores` en Couchbase Capella. Directorio de aliados de suministro.
+          Colección `proveedores` en MongoDB Atlas. Directorio de aliados de suministro.
         </p>
       </div>
 

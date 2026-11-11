@@ -13,7 +13,7 @@ export default function Navbar() {
           <span className="tracking-wide">SmartInventory</span>
         </div>
         <span className="text-xs bg-slate-800 text-cyan-400 px-2.5 py-1 rounded-full font-mono border border-cyan-800/40">
-          Couchbase Capella NoSQL
+          NoSQL políglota
         </span>
       </div>
 

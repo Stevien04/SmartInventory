@@ -5,7 +5,7 @@ export default function ProductTable({ productos, onDesactivar, isAdmin }) {
   if (!productos || productos.length === 0) {
     return (
       <div className="p-8 text-center text-slate-500 bg-white rounded-xl border border-slate-200">
-        No se encontraron productos registrados en Couchbase Capella.
+        No se encontraron productos registrados en MongoDB Atlas.
       </div>
     );
   }

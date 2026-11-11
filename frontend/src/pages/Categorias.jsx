@@ -42,7 +42,7 @@ export default function Categorias({ userRole }) {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Categorías de Productos</h1>
         <p className="text-sm text-slate-500">
-          Colección `categorias` en Couchbase Capella. Clasificación jerárquica de inventario.
+          Colección `categorias` en MongoDB Atlas. Clasificación jerárquica de inventario.
         </p>
       </div>
 
