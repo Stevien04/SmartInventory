@@ -1,19 +1,39 @@
-# Modelo NoSQL de Couchbase Capella — SmartInventory
+# Modelo de datos — SmartInventory
 
-Este documento detalla la estructura física y lógica implementada en Couchbase Capella.
+SmartInventory guarda los datos en tres lugares, cada uno con un propósito distinto.
 
-## Organización de Datos
-- **Bucket:** `smartinventory`
-- **Scope:** `gestion`
-- **Colecciones:**
-  1. `usuarios`: Cuentas con roles (`ADMINISTRADOR`, `ALMACENERO`) y passwords con hash bcrypt.
-  2. `productos`: Catálogo maestro de ítems, precio de compra, precio de venta, `stockActual`, `stockMinimo`.
-  3. `categorias`: Familias de productos (ej. Periféricos, Componentes, Redes).
-  4. `proveedores`: Contactos y empresas suministradoras.
-  5. `movimientos`: Ledger inmutable de transacciones (`ENTRADA`, `SALIDA`, `AJUSTE`) con `operacionId` único.
-  6. `alertas`: Registro de eventos de umbral (`STOCK_BAJO`, `AGOTADO`).
+## 1. MongoDB (fuente de verdad)
 
-## Reglas de Integridad
-- No se permite editar el campo `stockActual` directamente desde el catálogo; solo cambia a través de transacciones en la colección `movimientos`.
-- La operación `SALIDA` verifica que `stockActual >= cantidad` antes de autorizar el cambio.
-- Cada movimiento almacena `stockAnterior` y `stockPosterior` para trazabilidad completa.
+Base de datos: `smartinventory`. Los esquemas están en `backend/src/models/` (Mongoose).
+
+| Colección | Contenido | Índices |
+| --- | --- | --- |
+| `usuarios` | Cuentas con rol (`ADMINISTRADOR`, `ALMACENERO`) y contraseña con hash bcrypt | `id` único, `email` único |
+| `productos` | Catálogo: código, precios, `stockActual`, `stockMinimo`, categoría y proveedor por ID | `id` único, `codigo` único |
+| `categorias` | Familias de productos | `id` único |
+| `proveedores` | Empresas suministradoras | `id` único |
+| `movimientos` | Historial inmutable de `ENTRADA`, `SALIDA` y `AJUSTE` con `stockAnterior` y `stockPosterior` | `id` único, `operacionId`, `productoId` |
+
+Las alertas (`STOCK_BAJO`, `AGOTADO`) no se guardan: se calculan al consultar comparando `stockActual` con `stockMinimo`.
+
+### Reglas de integridad
+- `stockActual` no se edita desde el catálogo; solo cambia mediante un movimiento.
+- Una `SALIDA` exige `stockActual >= cantidad`, así el stock nunca queda negativo.
+- El cambio de stock y el registro del movimiento se hacen en la misma transacción de MongoDB.
+- Cada movimiento guarda `stockAnterior` y `stockPosterior` para poder auditarlo.
+
+## 2. Redis (caché)
+
+| Clave | Valor | TTL |
+| --- | --- | --- |
+| `cache:dashboard_resumen` | JSON con los indicadores del dashboard | 60 s |
+
+La clave se borra cada vez que se crea, edita o desactiva un producto, o se registra un movimiento.
+
+## 3. Neo4j (grafo de suministro)
+
+```text
+(:Proveedor {nombre})-[:SUMINISTRA]->(:Producto {id, nombre})-[:PERTENECE_A]->(:Categoria {nombre})
+```
+
+El grafo se actualiza al crear un producto y se resincroniza completo al arrancar el servidor. Las consultas de ejemplo están en `grafo-neo4j.cypher`.
