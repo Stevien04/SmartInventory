@@ -34,7 +34,7 @@ jobs:
       - name: Frontend - Compilar para producción (Vite)
         working-directory: ./frontend
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://smartinventory-api.onrender.com/api' }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://smartinventory-api-29jb.onrender.com/api' }}
         run: npm run build
 
   deploy:

@@ -68,7 +68,7 @@ GitHub (push/PR) -> GitHub Actions (test/build) -> Webhook Deploy Render
 ### 5.5 Movimientos
 - Registrar entradas, salidas y ajustes con fecha, producto, cantidad, motivo y usuario responsable.
 - Impedir que una salida genere stock negativo.
-- Guardar el movimiento y actualizar el stock **de forma atómica**, usando transacciones de Couchbase cuando el entorno lo permita.
+- Guardar el movimiento y actualizar el stock **de forma atómica**, usando una transacción de MongoDB (sesión de Mongoose).
 - Prevenir registros duplicados por reintentos mediante un identificador único de operación.
 
 ### 5.6 Alertas inteligentes
@@ -83,13 +83,14 @@ GitHub (push/PR) -> GitHub Actions (test/build) -> Webhook Deploy Render
 - Historial de movimientos filtrado por rango de fechas y producto.
 - Exportación CSV; PDF opcional.
 
-## 6. Modelo NoSQL (Couchbase)
+## 6. Modelo de datos
 
-- Bucket: `smartinventory`
-- Scope: `gestion`
-- Collections: `usuarios`, `productos`, `categorias`, `proveedores`, `movimientos`, `alertas`.
-- Utilizar documentos JSON e índices adecuados para búsquedas y filtros.
-- Mantener claves únicas y referencias por ID entre documentos; validar las referencias en el backend.
+- **MongoDB** (base `smartinventory`): colecciones `usuarios`, `productos`, `categorias`, `proveedores` y `movimientos`. Es la fuente de verdad.
+- **Redis**: clave `cache:dashboard_resumen` con TTL de 60 s, invalidada en cada cambio de inventario.
+- **Neo4j**: `(:Proveedor)-[:SUMINISTRA]->(:Producto)-[:PERTENECE_A]->(:Categoria)`.
+- Las referencias entre documentos son por ID (`categoriaId`, `proveedorId`) y se validan en el backend.
+
+Detalle completo en [`database/collections.md`](database/collections.md); índices en [`database/indexes.mongodb.js`](database/indexes.mongodb.js); consultas del grafo en [`database/grafo-neo4j.cypher`](database/grafo-neo4j.cypher).
 
 ### Ejemplo: documento de producto
 
@@ -149,7 +150,7 @@ Las rutas privadas requieren autenticación. Aplicar validación de entrada, man
 ## 8. Estructura del repositorio
 
 ```text
-smartinventory-nosql/
+SmartInventory/
 ├── frontend/
 │   ├── public/
 │   ├── src/
@@ -181,7 +182,12 @@ smartinventory-nosql/
 │   └── vite.config.js
 ├── backend/
 │   ├── src/
-│   │   ├── config/couchbase.js
+│   │   ├── config/
+│   │   │   ├── mongodb.js
+│   │   │   ├── redis.js
+│   │   │   ├── neo4j.js
+│   │   │   └── prometheus.js
+│   │   ├── models/
 │   │   ├── controllers/
 │   │   │   ├── authController.js
 │   │   │   ├── productoController.js
@@ -197,6 +203,7 @@ smartinventory-nosql/
 │   │   │   └── movimientoRoutes.js
 │   │   ├── services/
 │   │   │   ├── stockService.js
+│   │   │   ├── grafoService.js
 │   │   │   └── alertaService.js
 │   │   ├── middleware/
 │   │   │   ├── authMiddleware.js
@@ -204,13 +211,16 @@ smartinventory-nosql/
 │   │   │   └── errorMiddleware.js
 │   │   ├── app.js
 │   │   └── server.js
-│   ├── scripts/seedAdmin.js
+│   ├── scripts/
+│   │   ├── seedAdmin.js
+│   │   └── seedMongoDB.js
 │   ├── tests/
 │   ├── .env.example
 │   └── package.json
 ├── database/
 │   ├── collections.md
-│   ├── indexes.sqlpp
+│   ├── indexes.mongodb.js
+│   ├── grafo-neo4j.cypher
 │   └── sample-data.json
 ├── .github/
 │   └── workflows/
@@ -219,6 +229,8 @@ smartinventory-nosql/
 │   ├── arquitectura.md
 │   ├── api.md
 │   └── despliegue.md
+├── docker-compose.yml
+├── prometheus.yml
 ├── .gitignore
 └── README.md
 ```
@@ -237,13 +249,15 @@ VITE_API_URL=http://localhost:3000/api
 PORT=3000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
-COUCHBASE_CONNECTION_STRING=couchbases://YOUR-ENDPOINT
-COUCHBASE_USERNAME=YOUR-USERNAME
-COUCHBASE_PASSWORD=YOUR-PASSWORD
-COUCHBASE_BUCKET=smartinventory
-COUCHBASE_SCOPE=gestion
 JWT_SECRET=REPLACE_WITH_A_LONG_RANDOM_SECRET
+MONGODB_URI=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/smartinventory
+REDIS_URL=redis://default:<password>@<host>:<port>
+NEO4J_URI=neo4j+s://<instancia>.databases.neo4j.io
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=<password>
 ```
+
+Para desarrollo local, `docker compose up -d` levanta MongoDB, Redis, Neo4j y Prometheus; en ese caso usa `MONGODB_URI=mongodb://localhost:27017/smartinventory`, `REDIS_URL=redis://localhost:6379` y `NEO4J_URI=bolt://localhost:7687`. Ojo: los movimientos usan transacciones de MongoDB, que requieren un replica set. Atlas ya lo trae; el contenedor local de `docker-compose.yml` es un nodo suelto, así que para registrar movimientos en local conviene apuntar a Atlas.
 
 Nunca subir archivos `.env` reales a GitHub. Las variables de producción se configuran en Render; los tokens/hook URLs para despliegue se guardan como GitHub Actions Secrets.
 
@@ -253,9 +267,9 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 2. Configurar GitHub Actions para ejecutar instalación, lint, pruebas y build en cada pull request y push a `main`.
 3. Desplegar el frontend como sitio estático en Render.
 4. Desplegar el backend como servicio web en Render.
-5. Configurar Couchbase Capella y la conectividad segura desde el backend. Verificar restricciones de red/allowlist y de IP saliente de Render antes de elegir la modalidad gratuita.
+5. Crear las instancias en la nube (MongoDB Atlas, Redis Cloud, Neo4j AuraDB) y cargar sus credenciales como variables de entorno del Web Service en Render. En Atlas, permitir el acceso desde las IP de Render.
 6. Activar despliegues de Render desde GitHub Actions **solo cuando las pruebas pasen**; evitar despliegues dobles desactivando el autodeploy independiente si se usa un deploy hook.
-7. Confirmar que la URL pública funciona y que los datos persisten en Couchbase.
+7. Confirmar en `/api/health` que los cuatro componentes aparecen conectados y que los datos persisten en MongoDB Atlas.
 
 ## 11. Criterios de aceptación
 
@@ -265,7 +279,7 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 - [x] Una salida no permite inventario negativo.
 - [x] Las alertas de stock bajo aparecen automáticamente.
 - [x] Dashboard y reportes muestran datos reales.
-- [x] Datos persistidos en Couchbase (no arreglos estáticos ni almacenamiento local).
+- [x] Datos persistidos en MongoDB Atlas, con caché en Redis y grafo en Neo4j (no arreglos estáticos ni almacenamiento local).
 - [x] Código publicado en un repositorio público.
 - [x] GitHub Actions ejecuta pruebas y despliega automáticamente.
 - [x] Frontend y API accesibles mediante URLs públicas.
@@ -275,7 +289,7 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 
 - **Repositorio GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory) (Ver archivo `links.txt`)
 - **Aplicación desplegada (Frontend Render):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
-- **API REST desplegada (Backend Render):** [https://smartinventory-api.onrender.com/api/health](https://smartinventory-api.onrender.com/api/health)
+- **API REST desplegada (Backend Render):** [https://smartinventory-api-29jb.onrender.com/api/health](https://smartinventory-api-29jb.onrender.com/api/health)
 - **Artículo en Dev.to, Medium o Hashnode:** [docs/articulo-publicacion.md](docs/articulo-publicacion.md) (Ver borrador listo para publicar con metadata y tags)
 - **Video público (< 5 minutos):** [docs/guion-video.md](docs/guion-video.md) (Guion escena por escena ajustado a 4:30 min)
 - **Mensaje para grupo de Telegram:** [docs/mensaje-telegram.md](docs/mensaje-telegram.md) (Plantilla formateada lista para enviar)
@@ -285,12 +299,8 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 
 | Tiempo | Contenido |
 | --- | --- |
-| 0:00–0:30 | Problema y objetivo (Restricción: No Mongo, No Redis, No Neo4j, No Prometheus) |
-| 0:30–1:15 | Arquitectura y Couchbase NoSQL (Scopes, Colecciones, Transacciones ACID, SQL++) |
+| 0:00–0:30 | Problema y objetivo: por qué un solo motor no basta |
+| 0:30–1:15 | Arquitectura políglota: MongoDB, Redis, Neo4j y Prometheus |
 | 1:15–2:45 | Demostración del sistema (Login, Creación de producto, Control anti-stock negativo, Alertas) |
 | 2:45–3:45 | GitHub Actions y despliegue (CI/CD automático a Render) |
-| 3:45–4:30 | URL pública, datos almacenados en Couchbase Capella y conclusiones |
-
-## 13. Instrucciones para Antigravity
-
-Construye este proyecto **por etapas**, respetando el stack y la estructura de carpetas. Primero crea un MVP funcional con autenticación, productos, movimientos, dashboard y alertas. Después agrega categorías, proveedores, reportes y gestión de usuarios. Incluye datos de ejemplo, validaciones, pruebas automatizadas, archivos `.env.example`, documentación de ejecución local y el workflow de CI/CD. No simules una integración con Couchbase: implementa conexión real y explica cualquier configuración de nube pendiente. No inventes credenciales ni URLs de despliegue. No uses Redis, MongoDB, Neo4j o Prometheus.
+| 3:45–4:30 | `/api/health`, `/metrics`, grafo en Neo4j y conclusiones |

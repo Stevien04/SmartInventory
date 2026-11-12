@@ -1,224 +1,310 @@
 ---
-title: Construyendo y Desplegando SmartInventory: Una Arquitectura NoSQL Políglota con MongoDB, Redis, Neo4j y Prometheus en la Nube
+title: "SmartInventory: persistencia políglota con MongoDB, Redis, Neo4j y Prometheus, desplegada con CI/CD"
 published: true
-description: Guía paso a paso para diseñar y desplegar con CI/CD una plataforma de inventarios de alto rendimiento utilizando MongoDB Atlas, Redis Cloud, Neo4j AuraDB y Prometheus.
-tags: nosql, mongodb, redis, neo4j, devops, prometheus
-cover_image: https://raw.githubusercontent.com/tu-usuario/smartinventory-nosql/main/docs/assets/cover-banner.png
-canonical_url: https://dev.to/tu-usuario/construyendo-y-desplegando-smartinventory-con-mongodb-redis-neo4j-y-prometheus
+description: Cómo construimos un sistema de inventarios que usa cuatro tecnologías NoSQL y de observabilidad, cada una para lo que mejor hace, y qué aprendimos al ponerlo en producción.
+tags: nosql, mongodb, redis, neo4j
 ---
 
-# Construyendo y Desplegando SmartInventory: Una Arquitectura NoSQL Políglota con MongoDB, Redis, Neo4j y Prometheus en la Nube
+# SmartInventory: persistencia políglota con MongoDB, Redis, Neo4j y Prometheus
 
-En el diseño de sistemas de información contemporáneos, el paradigma de una única base de datos para todas las necesidades ha quedado atrás. Las arquitecturas modernas adoptan la **persistencia políglota**, combinando diferentes motores especializados para resolver necesidades puntuales de almacenamiento, latencia y análisis.
+Un inventario parece un problema sencillo: productos, entradas y salidas. Pero en cuanto se mira de cerca aparecen necesidades que tiran en direcciones distintas. El catálogo cambia de forma con cada categoría de producto. El stock no puede quedar nunca en negativo, ni siquiera si dos personas registran una salida al mismo tiempo. El dashboard se consulta todo el día y no debería recalcularse en cada visita. Y cuando un proveedor falla, hay que saber rápido qué productos quedan afectados.
 
-En este artículo, detallamos la construcción y el despliegue automatizado de **SmartInventory**, un sistema integral de gestión y control de existencias impulsado por un stack cuádruple de nivel empresarial: **MongoDB** para almacenamiento documental, **Redis** para aceleración en memoria, **Neo4j** para el análisis de relaciones en la cadena de suministro y **Prometheus** para observabilidad continua.
+Ninguna base de datos resuelve bien las cuatro cosas a la vez. Por eso **SmartInventory** usa **persistencia políglota**: cada motor se encarga de una sola responsabilidad.
 
----
+## Enlaces del proyecto
 
-## 📌 Enlaces Oficiales del Proyecto
+- **Repositorio:** https://github.com/Stevien04/SmartInventory
+- **Aplicación:** https://smartinventory-app.onrender.com
+- **Estado de la API:** https://smartinventory-api-29jb.onrender.com/api/health
+- **Métricas en formato Prometheus:** https://smartinventory-api-29jb.onrender.com/metrics
+- **Video demostrativo:** https://youtu.be/DEMO_SMARTINVENTORY <!-- reemplazar por el enlace real antes de publicar -->
 
-* 💻 **Repositorio Público en GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory)
-* 🌐 **Frontend en Producción (Render Static Site):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
-* ⚙️ **API REST en Producción (Render Web Service):** [https://smartinventory-api-29jb.onrender.com/api/health](https://smartinventory-api-29jb.onrender.com/api/health)
-* 📊 **Métricas de Prometheus (/metrics):** [https://smartinventory-api-29jb.onrender.com/metrics](https://smartinventory-api-29jb.onrender.com/metrics)
-* 🎥 **Video Demostrativo (< 5 min en YouTube / Redes):** [https://youtu.be/DEMO_SMARTINVENTORY](https://youtu.be/DEMO_SMARTINVENTORY)
-
----
-
-## 1. El Reto y la Elección del Stack Políglota
-
-El control de inventarios demanda características dispares que un solo motor no puede resolver de manera óptima:
-1. **Flexibilidad en el catálogo:** Atributos variables por categoría de producto ➔ **MongoDB** (JSON Documents).
-2. **Consultas ultrarrápidas en Dashboard:** Respuestas en submilisegundos y reducción de carga en la base de datos primaria ➔ **Redis** (Key-Value In-Memory).
-3. **Trazabilidad de la cadena de suministro:** Dependencias complejas de proveedores y categorías ➔ **Neo4j** (Grafos y Cypher).
-4. **Supervisión de salud y métricas de negocio:** Monitoreo en tiempo real de latencia HTTP y existencias ➔ **Prometheus** (Time-Series Exporter).
-
-### Matriz Arquitectónica
-
-| Tecnología | Tipo de Persistencia | Rol en SmartInventory |
-| :--- | :--- | :--- |
-| **MongoDB Atlas** | Document Store NoSQL | Catálogo maestro de productos, usuarios con hash bcrypt y transacciones de movimientos |
-| **Redis Cloud** | In-Memory Key-Value | Caché reactiva para el Dashboard (`cache:dashboard_resumen`), invalidación automática y sesiones |
-| **Neo4j AuraDB** | Graph Database | Grafo de suministros: `(:Proveedor)-[:SUMINISTRA]->(:Producto)-[:PERTENECE_A]->(:Categoria)` |
-| **Prometheus** | Time-Series Metrics | Exposición de métricas `/metrics` con contadores de movimientos, histogramas y gauges de stock |
-| **Render** | Cloud PaaS Provider | Alojamiento serverless del Frontend (Static Site) y de la API Node.js (Web Service) |
-| **GitHub Actions** | CI/CD Automation | Validación automática de pruebas y despliegue por Webhooks |
+> Los servicios están en el plan gratuito de Render: la primera petición después de un rato sin uso puede tardar unos 30 segundos mientras el servidor despierta.
 
 ---
 
-## 2. Arquitectura del Sistema
+## 1. Un motor para cada problema
+
+| Necesidad | Motor | Por qué |
+| --- | --- | --- |
+| Catálogo flexible y movimientos consistentes | **MongoDB Atlas** | Documentos JSON sin esquema rígido y transacciones multi-documento |
+| Dashboard que no recalcula en cada visita | **Redis Cloud** | Clave-valor en memoria con expiración automática |
+| Saber qué depende de qué proveedor | **Neo4j AuraDB** | Las relaciones son datos de primera clase y se consultan con Cypher |
+| Ver la salud del sistema y del inventario | **Prometheus** | Métricas numéricas en series de tiempo, en un formato estándar |
+
+MongoDB es la **fuente de verdad**. Redis y Neo4j guardan datos derivados de MongoDB: si se pierden, se pueden reconstruir. Esa decisión simplifica mucho todo lo demás, como se verá en la sección 4.
+
+## 2. Arquitectura
 
 ```text
-       [ Navegador del Usuario (React + Vite + Tailwind CSS) ]
-                                 │
-                                 ▼  (HTTPS / REST / JWT)
-             [ Backend: Node.js + Express API ]
-       ┌───────────────┬───────────────────┬─────────────────┐
-       │               │                   │                 │
-       ▼               ▼                   ▼                 ▼
- [ MongoDB Atlas ] [ Redis Cloud ] [ Neo4j AuraDB ]   [ Prometheus ]
-  (Documentos)      (Caché <2ms)     (Grafos Cypher)   (Métricas /metrics)
+        [ Navegador: React 18 + Vite + Tailwind ]        Render Static Site
+                          │  HTTPS + JWT
+                          ▼
+             [ API: Node.js + Express ]                   Render Web Service
+      ┌──────────────┬──────────────┬──────────────┬──────────────┐
+      ▼              ▼              ▼              ▼
+ MongoDB Atlas   Redis Cloud   Neo4j AuraDB    /metrics
+ (documentos)    (caché)       (grafo)         (Prometheus)
 ```
 
----
+Así viaja una petición típica, **registrar una salida de 2 unidades**:
 
-## 3. Implementación de los Componentes Clave
+1. La API abre una transacción en MongoDB, lee el producto, comprueba que hay stock suficiente, lo descuenta y guarda el movimiento. Todo se confirma junto o no se confirma nada.
+2. Borra la clave del dashboard en Redis para que la siguiente consulta vea el stock nuevo.
+3. Suma 1 al contador `smartinventory_movimientos_total{tipo="SALIDA",estado="EXITOSO"}` de Prometheus.
 
-### A. MongoDB: Transacciones Atómicas sin Stock Negativo
-Para prevenir inconsistencias y garantizar que ninguna salida deje existencias en negativo, ejecutamos transacciones atómicas con Mongoose:
+## 3. Implementación
+
+### 3.1 MongoDB: el stock nunca queda en negativo
+
+Un producto es un documento con referencias por ID a su categoría y proveedor:
+
+```json
+{
+  "id": "PROD-001",
+  "codigo": "SKU-KB-001",
+  "nombre": "Teclado Mecánico RGB Pro",
+  "categoriaId": "CAT-001",
+  "proveedorId": "PROV-001",
+  "precioCompra": 45.0,
+  "precioVenta": 85.0,
+  "stockActual": 14,
+  "stockMinimo": 5,
+  "estado": "ACTIVO"
+}
+```
+
+El campo `stockActual` **no se edita desde el catálogo**. Solo cambia a través de un movimiento, y cada movimiento guarda `stockAnterior` y `stockPosterior`, de modo que el historial completo se puede auditar.
+
+La regla de negocio vive en una función pura, fácil de probar:
 
 ```javascript
 // backend/src/services/stockService.js
-export async function procesarMovimiento({ productoId, tipo, cantidad, motivo, usuarioId, operacionId }) {
-  const session = await Producto.startSession();
-  try {
-    session.startTransaction();
+export function validarYCalcularNuevoStock(stockActual, tipo, cantidad) {
+  const actual = Number(stockActual);
+  const cant = Number(cantidad);
+  if (isNaN(cant) || cant <= 0) throw new Error('La cantidad debe ser un número positivo mayor a cero');
 
-    const producto = await Producto.findOne({ id: productoId }).session(session);
-    if (!producto) throw new Error('Producto no encontrado');
+  let nuevoStock;
+  if (tipo === 'ENTRADA') nuevoStock = actual + cant;
+  else if (tipo === 'SALIDA') {
+    if (actual < cant) {
+      throw new Error(`Stock insuficiente: disponible ${actual}, solicitado ${cant}.`);
+    }
+    nuevoStock = actual - cant;
+  } else if (tipo === 'AJUSTE') nuevoStock = cant;
+  else throw new Error(`Tipo de movimiento no soportado: ${tipo}`);
 
-    const calculo = validarYCalcularNuevoStock(producto.stockActual, tipo, cantidad);
-    producto.stockActual = calculo.stockPosterior;
-    await producto.save({ session });
-
-    const movimiento = new Movimiento({
-      id: `MOV-${Date.now()}`,
-      operacionId,
-      productoId,
-      tipo,
-      cantidad,
-      stockAnterior: calculo.stockAnterior,
-      stockPosterior: calculo.stockPosterior,
-      motivo,
-      usuarioId
-    });
-    await movimiento.save({ session });
-
-    await session.commitTransaction();
-
-    // 1. Invalidación inmediata de la caché de Redis
-    await delCache('cache:dashboard_resumen');
-
-    // 2. Instrumentación de métrica en Prometheus
-    movimientosCounter.labels(tipo, 'EXITOSO').inc();
-
-    return { producto, movimiento, alerta: calculo.nivelAlerta };
-  } catch (error) {
-    await session.abortTransaction();
-    movimientosCounter.labels(tipo, 'FALLIDO').inc();
-    throw error;
-  } finally {
-    session.endSession();
-  }
+  return { stockAnterior: actual, stockPosterior: nuevoStock, nivelAlerta: calcularNivelAlerta(nuevoStock) };
 }
 ```
 
-### B. Redis: Aceleración del Dashboard en Submilisegundos
-El endpoint `/api/dashboard/resumen` implementa el patrón **Cache-Aside**:
+Y la escritura se hace dentro de una transacción de Mongoose, para que el stock y el movimiento se guarden juntos:
+
+```javascript
+const session = await Producto.startSession();
+try {
+  session.startTransaction();
+
+  const producto = await Producto.findOne({ id: productoId }).session(session);
+  const calculo = validarYCalcularNuevoStock(producto.stockActual, tipo, cantidad);
+
+  producto.stockActual = calculo.stockPosterior;
+  await producto.save({ session });
+  await new Movimiento({ /* ... */ stockAnterior: calculo.stockAnterior, stockPosterior: calculo.stockPosterior })
+    .save({ session });
+
+  await session.commitTransaction();
+  await delCache('cache:dashboard_resumen');          // Redis
+  movimientosCounter.labels(tipo, 'EXITOSO').inc();   // Prometheus
+} catch (error) {
+  await session.abortTransaction();
+  movimientosCounter.labels(tipo, 'FALLIDO').inc();
+  throw error;
+} finally {
+  session.endSession();
+}
+```
+
+Si la validación falla a mitad de camino, `abortTransaction()` deshace todo: no queda un movimiento registrado con un stock sin actualizar ni al revés.
+
+### 3.2 Redis: caché del dashboard con el patrón cache-aside
+
+El resumen del dashboard (productos activos, unidades totales, productos agotados y con stock bajo, últimos movimientos) obliga a recorrer todo el catálogo. En lugar de hacerlo en cada visita, se guarda en Redis durante 60 segundos:
 
 ```javascript
 // backend/src/controllers/reporteController.js
-export async function dashboardResumen(req, res, next) {
-  const CACHE_KEY = 'cache:dashboard_resumen';
+const CACHE_KEY = 'cache:dashboard_resumen';
 
-  // 1. Verificar si existe en Redis (< 2ms)
-  const cachedData = await getCache(CACHE_KEY);
-  if (cachedData) {
-    return res.json({ ...cachedData, _source: 'Redis In-Memory Cache' });
-  }
-
-  // 2. Si no está en caché, calcular desde MongoDB
-  const [totalActivos, productos, ultimosMovimientos] = await Promise.all([
-    Producto.countDocuments({ estado: 'ACTIVO' }),
-    Producto.find({ estado: 'ACTIVO' }).lean(),
-    Movimiento.find().sort({ creadoEn: -1 }).limit(5).lean()
-  ]);
-
-  const resumen = {
-    totalProductosActivos: totalActivos,
-    unidadesTotales: productos.reduce((sum, p) => sum + p.stockActual, 0),
-    movimientosRecientes: ultimosMovimientos,
-    _source: 'MongoDB Atlas'
-  };
-
-  // 3. Guardar en Redis con TTL de 60 segundos
-  await setCache(CACHE_KEY, resumen, 60);
-  return res.json(resumen);
+const cachedData = await getCache(CACHE_KEY);
+if (cachedData) {
+  return res.json({ ...cachedData, _source: 'Redis In-Memory Cache' });
 }
+
+// No estaba en caché: calcular desde MongoDB
+const resumen = await calcularResumenDesdeMongo();
+await setCache(CACHE_KEY, resumen, 60); // TTL de 60 segundos
+return res.json(resumen);
 ```
 
-### C. Neo4j: Sincronización del Grafo de Cadena de Suministro
-Al registrar un producto, se sincronizan las relaciones en Neo4j mediante consultas Cypher declarativas:
+El TTL solo es la red de seguridad. Lo importante es la **invalidación explícita**: cada vez que se crea, edita o desactiva un producto, o se registra un movimiento, la API borra la clave. Así el dashboard nunca muestra stock viejo, y el campo `_source` de la respuesta deja ver en la demo si el dato vino de Redis o de MongoDB.
+
+### 3.3 Neo4j: el grafo de la cadena de suministro
+
+Cada producto se refleja en Neo4j junto con su proveedor y su categoría:
+
+```text
+(:Proveedor)-[:SUMINISTRA]->(:Producto)-[:PERTENECE_A]->(:Categoria)
+```
+
+La sincronización usa `MERGE`, que crea el nodo o la relación solo si no existe. Eso la hace **idempotente**: se puede repetir sin duplicar nada.
 
 ```cypher
 MERGE (p:Producto {id: $productoId})
 SET p.nombre = $nombreProducto, p.actualizadoEn = datetime()
-WITH p
 MERGE (prov:Proveedor {nombre: $proveedorNombre})
 MERGE (prov)-[:SUMINISTRA]->(p)
-WITH p
 MERGE (cat:Categoria {nombre: $categoriaNombre})
 MERGE (p)-[:PERTENECE_A]->(cat)
-RETURN p, prov, cat;
+RETURN p.id AS id
 ```
 
-### D. Prometheus: Observabilidad y Métricas en Tiempo Real
-El endpoint `/metrics` expone métricas estándar y de negocio raspadas continuamente:
-* `smartinventory_movimientos_total{tipo="SALIDA", estado="EXITOSO"}`
-* `smartinventory_productos_stock_bajo_total`
-* `smartinventory_http_request_duration_seconds`
+El grafo se actualiza al crear un producto y, además, **se resincroniza completo al arrancar el servidor** a partir de lo que hay en MongoDB. Gracias a `MERGE`, esa resincronización es segura aunque se ejecute en cada despliegue.
 
----
+¿Para qué sirve? Para preguntas que en una base de documentos exigirían varios `$lookup` y en un grafo son un patrón. Por ejemplo, qué categorías dependen de un único proveedor, es decir, dónde está el riesgo de desabastecimiento:
 
-## 4. Pipeline CI/CD Automatizado con GitHub Actions
+```cypher
+MATCH (prov:Proveedor)-[:SUMINISTRA]->(:Producto)-[:PERTENECE_A]->(cat:Categoria)
+RETURN cat.nombre AS categoria, count(DISTINCT prov) AS proveedores
+ORDER BY proveedores ASC;
+```
 
-El repositorio integra `.github/workflows/deploy.yml` para garantizar que todo cambio en `main` pase pruebas unitarias de cálculo de existencias y reglas de stock antes de invocar los webhooks de Render.
+O qué proveedores son alternativas entre sí porque abastecen la misma categoría:
+
+```cypher
+MATCH (a:Proveedor)-[:SUMINISTRA]->(:Producto)-[:PERTENECE_A]->(cat:Categoria)
+      <-[:PERTENECE_A]-(:Producto)<-[:SUMINISTRA]-(b:Proveedor)
+WHERE a.nombre < b.nombre
+RETURN cat.nombre, a.nombre, b.nombre;
+```
+
+Estas y otras consultas están en `database/grafo-neo4j.cypher` del repositorio, listas para ejecutar en la consola de AuraDB.
+
+### 3.4 Prometheus: métricas técnicas y de negocio
+
+Con `prom-client`, la API publica en `/metrics` las métricas del proceso (CPU, memoria, event loop) y cuatro propias:
+
+| Métrica | Tipo | Qué mide |
+| --- | --- | --- |
+| `smartinventory_http_request_duration_seconds` | Histograma | Latencia por método, ruta y código HTTP |
+| `smartinventory_movimientos_total` | Contador | Movimientos por tipo y por resultado (`EXITOSO`, `FALLIDO`) |
+| `smartinventory_productos_stock_bajo_total` | Gauge | Productos con stock por debajo del mínimo |
+| `smartinventory_productos_agotados_total` | Gauge | Productos con stock en cero |
+
+La latencia se mide con un middleware de Express que cronometra cada petición:
+
+```javascript
+export function prometheusMiddleware(req, res, next) {
+  const start = process.hrtime();
+  res.on('finish', () => {
+    const [s, ns] = process.hrtime(start);
+    const route = req.baseUrl + (req.route?.path || req.path);
+    httpRequestDurationMicroseconds.labels(req.method, route, res.statusCode).observe(s + ns / 1e9);
+  });
+  next();
+}
+```
+
+Mezclar métricas técnicas con métricas de negocio permite, por ejemplo, alertar cuando suben los movimientos `FALLIDO` (muchos intentos de sacar stock que no existe) o cuando crece el número de productos agotados. En local, el `docker-compose.yml` levanta un servidor Prometheus que lee `/metrics` cada 15 segundos.
+
+## 4. Diseñado para degradarse, no para caerse
+
+Como Redis y Neo4j solo guardan datos derivados, ninguno de los dos es imprescindible para que la API responda:
+
+- **Sin Redis**, la caché pasa a un `Map` en memoria del propio proceso.
+- **Sin Neo4j**, la sincronización del grafo simplemente se omite.
+- **Sin MongoDB**, la API responde con datos de demostración en lugar de fallar.
+
+El endpoint `/api/health` muestra el estado real de cada componente:
+
+```json
+{
+  "status": "UP",
+  "stack": {
+    "mongodb": "CONNECTED",
+    "redis": "CONNECTED",
+    "neo4j": "CONNECTED",
+    "prometheus": "ACTIVE (/metrics)"
+  }
+}
+```
+
+## 5. Lo que aprendimos al llevarlo a producción
+
+**Un `WITH` de más rompía Cypher.** La primera versión de la consulta de sincronización tenía `WITH p` entre los `MERGE`. `WITH` funciona como un `RETURN` intermedio: todo lo que no se nombra se descarta. La variable `prov` desaparecía y la consulta fallaba con *Variable `prov` not defined*. Quitar los `WITH` innecesarios lo resolvió.
+
+**Redis reintentaba para siempre.** Con credenciales incorrectas, `ioredis` reintenta la conexión indefinidamente y llena los logs de *Unhandled error event*. La solución fue registrar un manejador de `error`, usar `lazyConnect` y, si la primera conexión falla, desconectar el cliente y pasar a la caché en memoria. Unas credenciales malas no se arreglan solas reintentando.
+
+**El grafo empezaba vacío.** Al principio solo los productos *nuevos* llegaban a Neo4j, así que el catálogo que ya existía en MongoDB no aparecía en el grafo. Añadimos la resincronización al arrancar, que es segura precisamente porque `MERGE` es idempotente.
+
+**Las transacciones exigen un replica set.** MongoDB solo admite transacciones multi-documento en un replica set. Atlas lo trae de serie, pero un `mongod` local suelto no, así que para probar los movimientos en local lo más simple es apuntar a Atlas.
+
+## 6. CI/CD con GitHub Actions
+
+Cada push o pull request a `main` instala dependencias, ejecuta las pruebas unitarias del backend (incluida la regla de stock no negativo) y compila el frontend. Solo si todo pasa y el cambio está en `main`, se disparan los *deploy hooks* de Render:
 
 ```yaml
-name: SmartInventory CI/CD Pipeline
-on: [push, pull_request]
-
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci && npm test
+        with: { node-version: 20 }
+      - run: npm install && npm test
         working-directory: ./backend
-      - run: npm ci && npm run build
+      - run: npm install && npm run build
         working-directory: ./frontend
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
   deploy:
     needs: test-and-build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - run: curl -f -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
-      - run: curl -f -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
+      - run: curl -f -X POST "$RENDER_BACKEND_HOOK"
+        env: { RENDER_BACKEND_HOOK: "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}" }
+      - run: curl -f -X POST "$RENDER_FRONTEND_HOOK"
+        env: { RENDER_FRONTEND_HOOK: "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}" }
 ```
 
----
+Las URL de los hooks y las credenciales de las bases de datos viven como secretos: nunca están en el repositorio.
 
-## 5. Video Demostrativo (< 5 Minutos)
+## 7. Cómo probarlo en local
 
-El desarrollo y funcionamiento del sistema fue documentado en un video demostrativo público:
+```bash
+git clone https://github.com/Stevien04/SmartInventory.git
+cd SmartInventory
+docker compose up -d            # MongoDB, Redis, Neo4j y Prometheus
 
-[![Ver Video](https://img.youtube.com/vi/DEMO_SMARTINVENTORY/0.jpg)](https://youtu.be/DEMO_SMARTINVENTORY)
+cd backend
+cp .env.example .env            # completar las URI
+npm install
+npm run seed                    # datos de ejemplo
+npm run dev
 
-**Estructura del Video:**
-1. **0:00–0:30:** Visión general del proyecto y presentación del stack políglota.
-2. **0:30–1:15:** Arquitectura de MongoDB, Redis, Neo4j y Prometheus.
-3. **1:15–2:45:** Demostración en vivo de transacciones, caché de Redis y validación anti-stock negativo.
-4. **2:45–3:45:** Pipeline CI/CD con GitHub Actions y despliegue a Render.
-5. **3:45–4:30:** Inspección del endpoint `/metrics` en Prometheus y persistencia en MongoDB Atlas.
+cd ../frontend
+npm install
+npm run dev
+```
 
----
+Interfaces útiles: Neo4j Browser en `http://localhost:7474` y Prometheus en `http://localhost:9090`.
 
-## 6. Conclusiones
+## 8. Limitaciones y siguientes pasos
 
-La adopción de persistencia políglota con **MongoDB, Redis, Neo4j y Prometheus** demuestra que cada motor NoSQL sobresale en su especialidad. Lejos de competir, se complementan armónicamente: MongoDB asegura la consistencia documental, Redis reduce drásticamente la latencia, Neo4j descubre relaciones en la red de suministro y Prometheus ofrece total visibilidad operacional.
+- **El grafo todavía no se consulta desde la aplicación.** Hoy se explora en la consola de Neo4j; el siguiente paso es un endpoint como `GET /api/grafo/proveedores/:id/impacto` y una vista en el frontend.
+- **Idempotencia de movimientos.** Cada movimiento lleva un `operacionId`, pero el índice aún no es único, así que un reintento podría registrar el mismo movimiento dos veces. Hacerlo único cerraría ese hueco.
+- **Prometheus en la nube.** En producción la API expone `/metrics`, pero el servidor que las recolecta solo corre en local. Conectarlo a Grafana Cloud permitiría dashboards y alertas permanentes.
+
+## 9. Conclusiones
+
+La persistencia políglota no consiste en usar muchas bases de datos, sino en decidir con claridad **cuál es la fuente de verdad** y qué papel cumple cada una de las demás. En SmartInventory, MongoDB garantiza la consistencia del inventario, Redis evita recalcular el dashboard, Neo4j responde preguntas sobre relaciones que serían incómodas en documentos, y Prometheus hace visible lo que pasa dentro del sistema. Como Redis y Neo4j se pueden reconstruir desde MongoDB, añadirlos sumó capacidades sin sumar puntos únicos de falla.
