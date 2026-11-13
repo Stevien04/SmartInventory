@@ -24,7 +24,7 @@ Estimado docente y compañeros, compartimos los entregables oficiales de SmartIn
   https://dev.to/tu-usuario/construyendo-y-desplegando-smartinventory-con-mongodb-redis-neo4j-y-prometheus
 
 • 🎥 Video Demostrativo (< 5 min en YouTube / Redes): 
-  https://youtu.be/DEMO_SMARTINVENTORY
+  https://www.youtube.com/watch?v=ewAhGkIk9Ts
 
 📌 Tecnologías Implementadas y su Rol:
 1. MongoDB Atlas: Colecciones maestras (productos, movimientos, usuarios) con transacciones ACID.
