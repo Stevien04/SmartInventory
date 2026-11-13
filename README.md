@@ -291,7 +291,7 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 - **Aplicación desplegada (Frontend Render):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
 - **API REST desplegada (Backend Render):** [https://smartinventory-api-29jb.onrender.com/api/health](https://smartinventory-api-29jb.onrender.com/api/health)
 - **Artículo en Dev.to, Medium o Hashnode:** [docs/articulo-publicacion.md](docs/articulo-publicacion.md) (Ver borrador listo para publicar con metadata y tags)
-- **Video público (< 5 minutos):** [docs/guion-video.md](docs/guion-video.md) (Guion escena por escena ajustado a 4:30 min)
+- **Video público (3:30):** [https://www.youtube.com/watch?v=ewAhGkIk9Ts](https://www.youtube.com/watch?v=ewAhGkIk9Ts) (guion en [docs/guion-video.md](docs/guion-video.md))
 - **Mensaje para grupo de Telegram:** [docs/mensaje-telegram.md](docs/mensaje-telegram.md) (Plantilla formateada lista para enviar)
 - **Archivo de Enlaces:** [links.txt](links.txt) (Para el empaquetado ZIP final)
 

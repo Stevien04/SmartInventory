@@ -5,5 +5,5 @@
 - API REST en Producción (Backend en Render): https://smartinventory-api-29jb.onrender.com/api/health
 - Endpoint de Métricas Prometheus: https://smartinventory-api-29jb.onrender.com/metrics
 - Artículo Técnico Publicado (Dev.to / Hashnode / Medium): https://dev.to/tu-usuario/construyendo-y-desplegando-smartinventory-con-mongodb-redis-neo4j-y-prometheus
-- Video Demostrativo (< 5 min en YouTube / TikTok / Facebook): https://youtu.be/DEMO_SMARTINVENTORY
+- Video Demostrativo (< 5 min en YouTube / TikTok / Facebook): https://www.youtube.com/watch?v=ewAhGkIk9Ts
 - Grupo de Telegram: Enlace enviado con éxito al canal del equipo y del curso.

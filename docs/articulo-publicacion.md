@@ -17,9 +17,17 @@ Ninguna base de datos resuelve bien las cuatro cosas a la vez. Por eso **SmartIn
 - **Aplicación:** https://smartinventory-app.onrender.com
 - **Estado de la API:** https://smartinventory-api-29jb.onrender.com/api/health
 - **Métricas en formato Prometheus:** https://smartinventory-api-29jb.onrender.com/metrics
-- **Video demostrativo:** https://youtu.be/DEMO_SMARTINVENTORY <!-- reemplazar por el enlace real antes de publicar -->
+- **Video demostrativo (3:30):** https://www.youtube.com/watch?v=ewAhGkIk9Ts
 
 > Los servicios están en el plan gratuito de Render: la primera petición después de un rato sin uso puede tardar unos 30 segundos mientras el servidor despierta.
+
+---
+
+## Video demostrativo
+
+En 3 minutos y medio: la arquitectura, la aplicación funcionando en Render, el rechazo de una salida sin stock, las métricas y el grafo de suministro.
+
+[![Video demostrativo de SmartInventory](https://img.youtube.com/vi/ewAhGkIk9Ts/hqdefault.jpg)](https://www.youtube.com/watch?v=ewAhGkIk9Ts)
 
 ---
 
