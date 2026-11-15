@@ -2,7 +2,7 @@
 
 Cada paso dice **qué mostrar** en pantalla y **qué decir** mientras se ve. El texto sigue el orden de lo que aparece en cada diapositiva.
 
-Duración aproximada: 9 minutos. Si tienes menos tiempo, omite los pasos 5 y 7.
+Duración aproximada: 9 minutos. Si tienes menos tiempo, omite los pasos 5 y 8.
 
 ---
 
@@ -14,8 +14,8 @@ Duración aproximada: 9 minutos. Si tienes menos tiempo, omite los pasos 5 y 7.
 |---|---|---|
 | 1 | `exposicion/slides.html` (doble clic sobre el archivo) | `Ctrl + 1` |
 | 2 | `https://smartinventory-app.onrender.com` | `Ctrl + 2` |
-| 3 | `https://smartinventory-api-29jb.onrender.com/metrics` | `Ctrl + 3` |
-| 4 | `https://console.neo4j.io` → menú **Query** | `Ctrl + 4` |
+| 3 | `https://smartinventory-api-29jb.onrender.com/api/health` | `Ctrl + 3` |
+| 4 | `https://cloud.couchbase.com` → tu clúster → **Data Tools** | `Ctrl + 4` |
 | 5 | `https://github.com/Stevien04/SmartInventory/actions` | `Ctrl + 5` |
 
 Cierra todas las demás pestañas.
@@ -36,7 +36,7 @@ Se ve una sola diapositiva a la vez:
 
 Abre las pestañas 2 y 3 unos dos minutos antes. El servidor gratuito de Render se duerme y la primera carga tarda cerca de un minuto.
 
-En la pestaña 4, inicia sesión en la consola de Neo4j y comprueba que la instancia `Instance01` diga «Running». Las instancias gratuitas se pausan tras unos días sin uso: si aparece pausada, pulsa «···» → «Resume Instance» y espera un minuto.
+En la pestaña 3 comprueba que `database.estado` diga `CONNECTED`. En la pestaña 4, inicia sesión en Capella y comprueba que el clúster esté activo: los clústeres gratuitos se pausan tras un tiempo sin uso. Si aparece pausado, reanúdalo, espera a que esté listo y reinicia la API en Render (**Manual Deploy → Deploy latest commit**), porque el backend solo conecta con Couchbase al arrancar.
 
 ### 5. Prepara los datos de la demo
 
@@ -51,7 +51,7 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 **MOSTRAR:** pestaña 1, diapositiva 1 (pulsa `1`).
 
 **DECIR:**
-> Buenos días. Voy a presentar SmartInventory, un sistema web de gestión y control de inventarios. Su particularidad es que no usa una sola base de datos, sino varios motores NoSQL, cada uno para una tarea distinta. A eso se le llama persistencia políglota.
+> Buenos días. Voy a presentar SmartInventory, un sistema web de gestión y control de inventarios construido sobre una base de datos NoSQL documental en la nube: Couchbase Capella.
 
 ---
 
@@ -64,12 +64,12 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 
 ---
 
-### Paso 3 — Persistencia políglota · 50 s
+### Paso 3 — Couchbase Capella · 50 s
 
-**MOSTRAR:** pulsa `→`. Diapositiva 3, con cuatro tarjetas, una por motor.
+**MOSTRAR:** pulsa `→`. Diapositiva 3, con cuatro tarjetas.
 
 **DECIR:**
-> Estos son los cuatro motores, de izquierda a derecha. MongoDB Atlas es la base documental: guarda el catálogo de productos, los usuarios y los movimientos. Redis Cloud es un almacén clave-valor y se usa como caché del resumen del dashboard. Neo4j AuraDB es una base de grafos, para las relaciones entre proveedores, productos y categorías. Y Prometheus guarda series de tiempo: las métricas del sistema.
+> Elegimos Couchbase porque en una sola base de datos nos da cuatro capacidades. Documentos JSON, para un catálogo flexible. Acceso clave-valor: el ID del producto es la clave del documento, así que leerlo no necesita consultas. SQL++, un SQL para JSON, para listados, filtros y reportes. Y transacciones ACID, para que el stock y el movimiento se guarden juntos.
 
 ---
 
@@ -78,7 +78,7 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 **MOSTRAR:** pulsa `→`. Diapositiva 4, con tres capas de arriba abajo.
 
 **DECIR:**
-> La arquitectura tiene tres capas. Arriba, el frontend en React, publicado en Render como sitio estático. En el medio, el backend: una API REST en Node.js y Express, que valida las reglas de negocio y los roles. Y abajo, los datos: el backend tiene un cliente para cada motor. El navegador nunca habla directamente con las bases de datos.
+> La arquitectura tiene tres capas. Arriba, el frontend en React, publicado en Render como sitio estático. En el medio, el backend: una API REST en Node.js y Express, que valida las reglas de negocio y los roles. Y abajo, Couchbase Capella, con un bucket, un scope y cinco colecciones. El backend se conecta con el SDK de Couchbase por una conexión cifrada; el navegador nunca habla directamente con la base de datos.
 
 ---
 
@@ -87,7 +87,7 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 **MOSTRAR:** pulsa `→`. Diapositiva 5, con dos documentos JSON.
 
 **DECIR:**
-> En MongoDB hay dos documentos clave. A la izquierda, el producto, que guarda el stock actual y el stock mínimo. A la derecha, el movimiento, que guarda la historia: el tipo, la cantidad, y el stock anterior y posterior. Con eso se puede auditar cualquier cambio de existencias.
+> Hay dos documentos clave. A la izquierda, el producto, que guarda el stock actual y el stock mínimo; su ID es la clave del documento. A la derecha, el movimiento, que guarda la historia: el tipo, la cantidad, y el stock anterior y posterior. Con eso se puede auditar cualquier cambio de existencias.
 
 ---
 
@@ -96,25 +96,25 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 **MOSTRAR:** pulsa `→`. Diapositiva 6, con cuatro cajas en fila y tres niveles debajo.
 
 **DECIR:**
-> Esta es la regla de negocio central. Cuando se registra un movimiento, primero se valida: una salida no puede superar el stock disponible. Después, en una transacción, se actualiza el stock y se guarda el movimiento; o se guardan los dos o ninguno. Luego se borra la caché del dashboard y se cuenta la operación en las métricas. Abajo están los tres niveles de alerta: agotado, stock bajo y normal.
+> Esta es la regla de negocio central. Cuando se registra un movimiento, primero se valida: una salida no puede superar el stock disponible. Después, en una transacción ACID de Couchbase, se actualiza el stock y se guarda el movimiento; o se guardan los dos o ninguno. Si otro usuario cambió el mismo producto en ese instante, la operación se repite con el dato nuevo. Abajo están los tres niveles de alerta: agotado, stock bajo y normal.
 
 ---
 
-### Paso 7 — Redis y Neo4j · 45 s
+### Paso 7 — SQL++ y concurrencia · 45 s
 
 **MOSTRAR:** pulsa `→`. Diapositiva 7, con dos tarjetas.
 
 **DECIR:**
-> A la izquierda, la caché. Si el resumen del dashboard ya está guardado, se responde desde ahí; si no, se calcula en MongoDB y se guarda sesenta segundos. Cada movimiento borra esa clave, para no mostrar datos viejos. A la derecha, el grafo: al crear un producto se sincroniza un nodo con su proveedor y su categoría, lo que permite preguntar qué suministra cada proveedor.
+> A la izquierda, una consulta SQL++: los productos activos cuyo stock está en el mínimo o por debajo. Se lee igual que SQL, pero trabaja sobre documentos JSON. A la derecha, cómo se manejan dos escrituras a la vez: cada documento tiene una versión llamada CAS. Si otro proceso cambió el producto, Couchbase detecta el conflicto y la API repite la transacción.
 
 ---
 
-### Paso 8 — Observabilidad · 35 s
+### Paso 8 — Prueba de concurrencia · 35 s
 
-**MOSTRAR:** pulsa `→`. Diapositiva 8, con cuatro métricas.
+**MOSTRAR:** pulsa `→`. Diapositiva 8, con cuatro filas.
 
 **DECIR:**
-> El sistema informa de su propio estado con cuatro métricas: el total de movimientos por tipo y resultado, la latencia de cada ruta de la API, y cuántos productos están en stock bajo o agotados. Ahora las veremos en vivo.
+> Lo probamos con un Couchbase real. Con 5 unidades en stock, lanzamos tres salidas de 3 unidades al mismo tiempo. Una se aplicó y dejó el stock en 2; las otras dos se repitieron, leyeron el stock nuevo y fueron rechazadas por stock insuficiente. Y con tres entradas simultáneas, las tres se sumaron: no se perdió ninguna.
 
 ---
 
@@ -143,50 +143,39 @@ Entra a la aplicación y anota, en **Productos**, un producto con poco stock y s
 
 ---
 
-### Paso 11 — Demo de métricas · 30 s
+### Paso 11 — Los documentos en Capella · 1 min
 
-**MOSTRAR:** pulsa `Ctrl + 3` y recarga con `F5`.
+**MOSTRAR:** pulsa `Ctrl + 4` para ir a Capella.
 
-1. Pulsa `Ctrl + F` y busca `smartinventory_movimientos_total`.
-2. Señala la línea con `estado="EXITOSO"` y la de `estado="FALLIDO"`.
+1. En **Data Tools → Documents**, elige el bucket `smartinventory`, el scope `inventario` y la colección `movimientos`. Abre el movimiento más reciente.
+2. Ve a **Query**, con el contexto `smartinventory` / `inventario`, pega esta consulta y pulsa **Run**:
+
+```sql
+SELECT p.codigo, p.nombre, p.stockActual, p.stockMinimo
+FROM productos AS p
+WHERE p.estado = "ACTIVO" AND p.stockActual <= p.stockMinimo;
+```
 
 **DECIR:**
-> Este es el punto de métricas. Aquí está el contador de movimientos: la salida que acabo de registrar aparece como exitosa, y el intento rechazado, como fallido.
+> Aquí está, en Couchbase Capella, el movimiento que acabo de registrar, con el stock anterior y el posterior. Y con SQL++ consulto directamente en la base los productos que están en alerta.
 
 ---
 
-### Paso 12 — Demo del grafo · 40 s
-
-**MOSTRAR:** pulsa `Ctrl + 4` para ir a la consola de Neo4j, en **Query**.
-
-1. Pega esta consulta y pulsa **Run**:
-
-```
-MATCH (prov:Proveedor)-[:SUMINISTRA]->(p:Producto)-[:PERTENECE_A]->(c:Categoria) RETURN prov, p, c
-```
-
-2. Señala los nodos: proveedores, productos y categorías, unidos por flechas.
-
-**DECIR:**
-> Este es el grafo de suministro en Neo4j AuraDB. Cada producto está unido a su proveedor por la relación «suministra» y a su categoría por «pertenece a». El backend lo mantiene sincronizado con el catálogo de MongoDB. Aquí se puede preguntar, por ejemplo, qué productos dependen de un mismo proveedor.
-
----
-
-### Paso 13 — CI/CD · 50 s
+### Paso 12 — CI/CD · 50 s
 
 **MOSTRAR:** pulsa `Ctrl + 1` y avanza con `→` hasta la diapositiva 10. Después pulsa `Ctrl + 5` para mostrar GitHub Actions y abre la ejecución más reciente.
 
 **DECIR:**
-> El despliegue está automatizado con GitHub Actions. Cada push a la rama main ejecuta las pruebas unitarias del backend, que verifican el cálculo de stock y los niveles de alerta, y compila el frontend. Solo si todo pasa, se despliegan la API y el frontend en Render. Aquí se ven las ejecuciones en el repositorio público.
+> El despliegue está automatizado con GitHub Actions. Cada push a la rama main ejecuta doce pruebas: las reglas de stock, los niveles de alerta y la API completa. Luego compila el frontend. Solo si todo pasa, se despliegan la API y el frontend en Render. Las credenciales de Capella no están en el código: son variables de entorno en Render.
 
 ---
 
-### Paso 14 — Conclusiones · 30 s
+### Paso 13 — Conclusiones · 30 s
 
 **MOSTRAR:** pulsa `Ctrl + 1` y avanza con `→` hasta la diapositiva 11.
 
 **DECIR:**
-> En conclusión, SmartInventory muestra que no hace falta elegir un único motor NoSQL: cada uno resuelve bien un problema distinto, y el backend los coordina. En pantalla están el repositorio, la aplicación y las métricas. Muchas gracias. ¿Tienen alguna pregunta?
+> En conclusión, una sola base NoSQL bien elegida fue suficiente: Couchbase nos dio documentos flexibles, lecturas directas por clave, consultas en SQL++ y transacciones que impiden que el inventario se descuadre. En pantalla están el repositorio, la aplicación y el estado de la API. Muchas gracias. ¿Tienen alguna pregunta?
 
 ---
 
@@ -196,57 +185,39 @@ MATCH (prov:Proveedor)-[:SUMINISTRA]->(p:Producto)-[:PERTENECE_A]->(c:Categoria)
 |---|---|---|---|
 | 1 | 1 | Diapositiva 1: portada | 0:30 |
 | 2 | 1 | Diapositiva 2: problema y objetivo | 0:40 |
-| 3 | 1 | Diapositiva 3: los cuatro motores | 0:50 |
+| 3 | 1 | Diapositiva 3: Couchbase Capella | 0:50 |
 | 4 | 1 | Diapositiva 4: arquitectura | 0:40 |
 | 5 | 1 | Diapositiva 5: documentos | 0:40 |
 | 6 | 1 | Diapositiva 6: movimiento y alertas | 0:50 |
-| 7 | 1 | Diapositiva 7: caché y grafo | 0:45 |
-| 8 | 1 | Diapositiva 8: métricas | 0:35 |
+| 7 | 1 | Diapositiva 7: SQL++ y concurrencia | 0:45 |
+| 8 | 1 | Diapositiva 8: prueba de concurrencia | 0:35 |
 | 9 | 1 | Diapositiva 9: entrada a la demo | 0:10 |
 | 10 | 2 | App: sesión, rechazo y salida válida | 2:00 |
-| 11 | 3 | `/metrics`: contador de movimientos | 0:30 |
-| 12 | 4 | Neo4j: grafo de suministro | 0:40 |
-| 13 | 1 y 5 | Diapositiva 10 y GitHub Actions | 0:50 |
-| 14 | 1 | Diapositiva 11: conclusiones | 0:30 |
-
----
-
-## Estado en producción
-
-Los cuatro motores están conectados en la nube. La comprobación de estado de la API (`/api/health`) responde:
-
-| Motor | Estado | Servicio |
-|---|---|---|
-| MongoDB | `CONNECTED` | MongoDB Atlas |
-| Redis | `CONNECTED` | Redis Cloud, base `smartinventory-cache` (plan gratuito) |
-| Neo4j | `CONNECTED` | Neo4j AuraDB, instancia `Instance01` (plan gratuito) |
-| Prometheus | `ACTIVE (/metrics)` | Métricas expuestas por el backend |
-
-Si quieres mostrar la evidencia, abre `https://smartinventory-api-29jb.onrender.com/api/health` en una pestaña.
-
-Dos cuidados para el día de la exposición:
-
-1. **Neo4j se pausa solo.** Las instancias gratuitas de AuraDB se pausan tras unos días sin uso y se borran tras 30 días de inactividad. Entra a la consola ese día y reanúdala si hace falta. Después reinicia la API en Render (**Manual Deploy → Deploy latest commit**): el backend solo conecta con Neo4j al arrancar.
-2. **Comprueba el estado antes de empezar.** Si `/api/health` no muestra `CONNECTED` en Redis o en Neo4j, no afirmes que están en la nube: el backend sigue funcionando con una caché en memoria y sin grafo, y eso es lo que debes decir.
+| 11 | 4 | Capella: documento y consulta SQL++ | 1:00 |
+| 12 | 1 y 5 | Diapositiva 10 y GitHub Actions | 0:50 |
+| 13 | 1 | Diapositiva 11: conclusiones | 0:30 |
 
 ---
 
 ## Preguntas probables
 
-**¿Por qué varios motores y no solo MongoDB?**
-> Porque cada tipo de dato tiene un motor que lo maneja mejor. Los documentos van bien en MongoDB; una lectura repetida y costosa se acelera con una caché clave-valor; las relaciones entre proveedores y productos se consultan mejor en un grafo; y las métricas son series de tiempo.
+**¿Por qué Couchbase y no otra base NoSQL?**
+> Porque en un solo motor tiene lo que necesitábamos: documentos JSON flexibles, lectura directa por clave, consultas en SQL++ y transacciones ACID entre varios documentos. Así no hizo falta añadir una caché ni un segundo motor.
 
-**¿Qué pasa si Redis se cae?**
-> El backend sigue funcionando: usa una caché en memoria como respaldo y, si tampoco hay dato, consulta MongoDB. La caché acelera, pero no es la fuente de verdad.
-
-**¿Redis y Neo4j están desplegados en la nube?**
-> Sí. La caché está en Redis Cloud y el grafo en Neo4j AuraDB, ambos en su plan gratuito. Se puede comprobar en la ruta de estado de la API, que muestra los cuatro motores conectados.
+**¿Qué es SQL++?**
+> Es el lenguaje de consultas de Couchbase. Tiene SELECT, WHERE, JOIN y GROUP BY como SQL, pero trabaja sobre documentos JSON.
 
 **¿Cómo se evita el stock negativo?**
 > La validación ocurre en el backend, dentro de la misma transacción que actualiza el stock y guarda el movimiento. Si la salida supera el stock, la transacción se cancela y no se guarda nada.
 
+**¿Y si dos personas registran una salida a la vez?**
+> Cada documento tiene una versión, el CAS. Si dos transacciones intentan cambiar el mismo producto, Couchbase solo deja pasar la primera; la API repite la segunda, que lee el stock nuevo y aplica la regla sobre el dato real. Lo comprobamos con tres salidas simultáneas.
+
+**¿Qué pasa si Couchbase no está disponible?**
+> Si la API arranca sin credenciales o sin conexión, usa un almacén en memoria con datos de ejemplo y la ruta `/api/health` lo indica. En producción, la fuente de verdad es Couchbase Capella.
+
 **¿Qué prueban las pruebas automáticas?**
-> Son seis pruebas unitarias: que una entrada suma, que una salida permitida resta, que una salida mayor al stock se rechaza, y los tres niveles de alerta.
+> Son doce: las reglas de stock y de alertas, y pruebas de la API completa: inicio de sesión, crear un producto, código repetido, entradas, salidas, salida rechazada, alertas, y que las consultas SQL++ vayan parametrizadas.
 
 **¿Qué diferencia hay entre el administrador y el almacenero?**
-> El almacenero consulta productos, registra movimientos y revisa alertas. El administrador, además, gestiona usuarios.
+> El almacenero consulta productos, registra movimientos y revisa alertas. El administrador, además, gestiona el catálogo y los usuarios.

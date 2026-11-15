@@ -1,37 +1,14 @@
-import Movimiento from '../models/Movimiento.js';
-import { isMongoActive } from '../config/mongodb.js';
+import * as repo from '../db/repositorio.js';
 import { procesarMovimiento } from '../services/stockService.js';
-
-let fallbackMovimientos = [
-  {
-    id: 'MOV-INIT-001',
-    operacionId: 'op-init-001',
-    productoId: 'PROD-001',
-    tipo: 'ENTRADA',
-    cantidad: 14,
-    stockAnterior: 0,
-    stockPosterior: 14,
-    motivo: 'Inventario inicial',
-    usuarioId: 'USR-DEV-001',
-    creadoEn: new Date()
-  }
-];
 
 export async function listarMovimientos(req, res, next) {
   try {
     const { productoId } = req.query;
-
-    if (isMongoActive()) {
-      const filter = {};
-      if (productoId) filter.productoId = productoId;
-      const movs = await Movimiento.find(filter).sort({ creadoEn: -1 }).lean();
-      return res.json(movs);
-    }
-
-    if (productoId) {
-      return res.json(fallbackMovimientos.filter((m) => m.productoId === productoId));
-    }
-    return res.json(fallbackMovimientos);
+    const movimientos = await repo.listar('movimientos', {
+      filtro: productoId ? { productoId } : {},
+      orden: { campo: 'creadoEn', direccion: 'DESC' }
+    });
+    return res.json(movimientos);
   } catch (error) {
     next(error);
   }

@@ -204,13 +204,13 @@
     <span>BASE DE DATOS II · PROYECTO NoSQL</span>
   </div>
   <h1>SmartInventory</h1>
-  <p class="lead">Gestión y control de inventarios con persistencia NoSQL políglota</p>
+  <p class="lead">Gestión y control de inventarios sobre una base de datos NoSQL documental</p>
   <div class="chips">
-    <span class="chip">MongoDB</span>
-    <span class="chip">Redis</span>
-    <span class="chip">Neo4j</span>
-    <span class="chip">Prometheus</span>
+    <span class="chip">Couchbase Capella</span>
+    <span class="chip">SQL++</span>
+    <span class="chip">Transacciones ACID</span>
     <span class="chip">React + Node.js</span>
+    <span class="chip">GitHub Actions + Render</span>
   </div>
   <p class="team" id="team"></p>
 </section>
@@ -241,35 +241,35 @@
   <div class="foot"><span><b>SmartInventory</b></span><span>Problema y objetivo</span></div>
 </section>
 
-<!-- 3. Persistencia políglota -->
+<!-- 3. Couchbase -->
 <section class="slide">
-  <div class="kicker">Persistencia políglota</div>
-  <h2>Cada motor NoSQL hace lo que mejor sabe</h2>
+  <div class="kicker">Couchbase Capella</div>
+  <h2>Una base NoSQL, cuatro capacidades</h2>
   <div class="body">
     <div class="cards c4">
       <div class="card">
-        <h3>MongoDB Atlas</h3>
-        <div class="kind">Documentos</div>
-        <p>Catálogo de productos, usuarios y movimientos de inventario.</p>
+        <h3>Documentos JSON</h3>
+        <div class="kind">Modelo flexible</div>
+        <p>Productos, usuarios y movimientos sin esquema rígido.</p>
       </div>
       <div class="card">
-        <h3>Redis Cloud</h3>
-        <div class="kind">Clave-valor</div>
-        <p>Caché del resumen del dashboard, con vencimiento de 60 segundos.</p>
+        <h3>Clave-valor</h3>
+        <div class="kind">Lectura directa</div>
+        <p>El ID es la clave del documento: leer un producto no necesita consultas.</p>
       </div>
       <div class="card">
-        <h3>Neo4j AuraDB</h3>
-        <div class="kind">Grafos</div>
-        <p>Relaciones entre proveedores, productos y categorías.</p>
+        <h3>SQL++</h3>
+        <div class="kind">Consultas</div>
+        <p>Listados, filtros y reportes con un SQL para JSON e índices secundarios.</p>
       </div>
       <div class="card">
-        <h3>Prometheus</h3>
-        <div class="kind">Series de tiempo</div>
-        <p>Métricas de movimientos, latencia y stock, expuestas en <code>/metrics</code>.</p>
+        <h3>Transacciones ACID</h3>
+        <div class="kind">Consistencia</div>
+        <p>El stock y el movimiento se guardan juntos o no se guardan.</p>
       </div>
     </div>
   </div>
-  <div class="foot"><span><b>SmartInventory</b></span><span>Persistencia políglota</span></div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Couchbase Capella</span></div>
 </section>
 
 <!-- 4. Arquitectura -->
@@ -293,14 +293,12 @@
           <div class="box"><b>Render Web Service</b><span>Roles, errores centralizados y CORS</span></div>
         </div>
       </div>
-      <div class="link"><i></i><span>Un cliente por cada motor</span></div>
+      <div class="link"><i></i><span>SDK de Couchbase · conexión cifrada (TLS)</span></div>
       <div class="layer">
-        <div class="name">Datos y métricas</div>
-        <div class="boxes" style="grid-template-columns: repeat(4, 1fr);">
-          <div class="box"><b>MongoDB</b><span>Documentos</span></div>
-          <div class="box"><b>Redis</b><span>Caché</span></div>
-          <div class="box"><b>Neo4j</b><span>Grafo</span></div>
-          <div class="box"><b>Prometheus</b><span>Métricas</span></div>
+        <div class="name">Datos</div>
+        <div class="boxes">
+          <div class="box"><b>Couchbase Capella</b><span>bucket smartinventory · scope inventario</span></div>
+          <div class="box"><b>5 colecciones</b><span>usuarios · categorias · proveedores · productos · movimientos</span></div>
         </div>
       </div>
     </div>
@@ -310,14 +308,14 @@
 
 <!-- 5. Modelo de documentos -->
 <section class="slide">
-  <div class="kicker">Modelo de documentos · MongoDB</div>
+  <div class="kicker">Modelo de documentos · Couchbase</div>
   <h2>El producto guarda el stock; el movimiento, la historia</h2>
   <div class="body">
     <div class="cards c2">
       <div class="card">
         <div class="tag">Producto</div>
         <pre class="json">{
-  <span class="k">"id"</span>: "PROD-001",
+  <span class="k">"id"</span>: "PROD-001",  <span class="c">← clave</span>
   <span class="k">"codigo"</span>: "SKU-0001",
   <span class="k">"nombre"</span>: "Teclado mecánico",
   <span class="k">"categoriaId"</span>: "CAT-001",
@@ -353,11 +351,11 @@
     <div class="pipe p4">
       <div class="stage"><b>Validar</b><span>La salida no puede superar el stock disponible</span></div>
       <div class="arrow">→</div>
-      <div class="stage"><b>Transacción</b><span>Actualiza el stock y guarda el movimiento juntos</span></div>
+      <div class="stage"><b>Transacción ACID</b><span>Actualiza el stock y guarda el movimiento juntos</span></div>
       <div class="arrow">→</div>
-      <div class="stage"><b>Caché</b><span>Borra el resumen guardado del dashboard</span></div>
+      <div class="stage"><b>Conflicto</b><span>Si otro usuario cambió el producto, se repite</span></div>
       <div class="arrow">→</div>
-      <div class="stage end"><b>Métrica</b><span>Cuenta el movimiento como exitoso o fallido</span></div>
+      <div class="stage end"><b>Alerta</b><span>Se recalcula el nivel del producto</span></div>
     </div>
     <div class="levels">
       <div class="level red"><b>AGOTADO</b><span>El stock llegó a cero</span></div>
@@ -368,54 +366,51 @@
   <div class="foot"><span><b>SmartInventory</b></span><span>Movimientos y alertas</span></div>
 </section>
 
-<!-- 7. Caché y grafo -->
+<!-- 7. SQL++ y concurrencia -->
 <section class="slide">
-  <div class="kicker">Redis y Neo4j</div>
-  <h2>Velocidad en la lectura, relaciones en el grafo</h2>
+  <div class="kicker">SQL++ y concurrencia</div>
+  <h2>Consultar como en SQL, escribir sin descuadres</h2>
   <div class="body">
     <div class="cards c2">
       <div class="card">
-        <div class="tag">Redis · caché del dashboard</div>
-        <ul>
-          <li>Si el resumen está en caché, se responde desde ahí.</li>
-          <li>Si no, se calcula en MongoDB y se guarda 60 segundos.</li>
-          <li>Cada movimiento o cambio de producto borra la clave.</li>
-        </ul>
-        <pre>cache:dashboard_resumen</pre>
+        <div class="tag">SQL++ · productos con alerta</div>
+        <pre>SELECT p.codigo, p.stockActual
+FROM productos AS p
+WHERE p.estado = "ACTIVO"
+  AND p.stockActual &lt;= p.stockMinimo;</pre>
       </div>
       <div class="card">
-        <div class="tag">Neo4j · grafo de suministro</div>
+        <div class="tag">Dos salidas a la vez</div>
         <ul>
-          <li>Al crear un producto se sincroniza su nodo.</li>
-          <li>Permite preguntar qué provee cada proveedor.</li>
+          <li>Cada documento tiene un CAS (versión).</li>
+          <li>Si otro cambió el producto, Couchbase detecta el conflicto.</li>
+          <li>La API repite la transacción con el stock nuevo.</li>
         </ul>
-        <pre>(:Proveedor)-[:SUMINISTRA]->(:Producto)
-(:Producto)-[:PERTENECE_A]->(:Categoria)</pre>
       </div>
     </div>
   </div>
-  <div class="foot"><span><b>SmartInventory</b></span><span>Caché y grafo</span></div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>SQL++ y concurrencia</span></div>
 </section>
 
-<!-- 8. Observabilidad -->
+<!-- 8. Prueba de concurrencia -->
 <section class="slide">
-  <div class="kicker">Observabilidad · Prometheus</div>
-  <h2>El sistema informa de su propio estado</h2>
+  <div class="kicker">Prueba de concurrencia</div>
+  <h2>Tres salidas simultáneas, un solo resultado válido</h2>
   <div class="body">
     <div class="metrics">
-      <div class="metric-row"><code>smartinventory_movimientos_total</code><span>Movimientos por tipo y resultado</span></div>
-      <div class="metric-row"><code>smartinventory_http_request_duration_seconds</code><span>Latencia de cada ruta de la API</span></div>
-      <div class="metric-row"><code>smartinventory_productos_stock_bajo_total</code><span>Productos en el mínimo o por debajo</span></div>
-      <div class="metric-row"><code>smartinventory_productos_agotados_total</code><span>Productos sin existencias</span></div>
+      <div class="metric-row"><code>Stock inicial: 5 · tres salidas de 3 a la vez</code><span>Escenario</span></div>
+      <div class="metric-row"><code>201 · salida aplicada → stock 2</code><span>Gana la primera</span></div>
+      <div class="metric-row"><code>400 · Stock insuficiente: disponible 2</code><span>Reintenta y lee el stock nuevo</span></div>
+      <div class="metric-row"><code>Tres entradas de 4 a la vez → stock 14</code><span>Ninguna actualización se pierde</span></div>
     </div>
   </div>
-  <div class="foot"><span><b>SmartInventory</b></span><span>Observabilidad</span></div>
+  <div class="foot"><span><b>SmartInventory</b></span><span>Prueba de concurrencia</span></div>
 </section>
 
 <!-- 9. Demo -->
 <section class="slide">
   <div class="kicker">Demostración en vivo</div>
-  <h2>Del inicio de sesión a la métrica</h2>
+  <h2>De la aplicación a los documentos en Capella</h2>
   <div class="body">
     <div><span class="url">smartinventory-app.onrender.com</span></div>
     <div class="steps s5">
@@ -423,7 +418,7 @@
       <div class="step"><div class="who">2 · Dashboard</div><p>Ver indicadores y alertas de stock.</p></div>
       <div class="step"><div class="who">3 · Rechazo</div><p>Intentar una salida mayor al stock.</p></div>
       <div class="step"><div class="who">4 · Salida</div><p>Registrar una salida válida.</p></div>
-      <div class="step"><div class="who">5 · Evidencia</div><p>Ver el contador en <code>/metrics</code> y el grafo en Neo4j.</p></div>
+      <div class="step"><div class="who">5 · Evidencia</div><p>Ver el movimiento en Capella y consultarlo con SQL++.</p></div>
     </div>
   </div>
   <div class="foot"><span><b>SmartInventory</b></span><span>Demostración</span></div>
@@ -437,7 +432,7 @@
     <div class="pipe p4">
       <div class="stage"><b>Push</b><span>a la rama <code>main</code></span></div>
       <div class="arrow">→</div>
-      <div class="stage"><b>Probar</b><span>Pruebas unitarias del backend</span></div>
+      <div class="stage"><b>Probar</b><span>Pruebas del backend y de la API</span></div>
       <div class="arrow">→</div>
       <div class="stage"><b>Compilar</b><span>Frontend con Vite</span></div>
       <div class="arrow">→</div>
@@ -445,7 +440,7 @@
     </div>
     <div class="notes">
       <div class="note"><b>Workflow</b><br><code>.github/workflows/deploy.yml</code></div>
-      <div class="note"><b>Seis pruebas unitarias</b><br>Cálculo de stock y niveles de alerta</div>
+      <div class="note"><b>Doce pruebas</b><br>Reglas de stock, alertas y la API completa</div>
       <div class="note"><b>Repositorio público en GitHub</b><br><code>Stevien04/SmartInventory</code></div>
     </div>
   </div>
@@ -455,12 +450,12 @@
 <!-- 11. Cierre -->
 <section class="slide">
   <div class="kicker">Conclusiones</div>
-  <h2>Varios motores NoSQL, cada uno en su papel</h2>
+  <h2>Una base NoSQL bien elegida es suficiente</h2>
   <div class="body">
     <div class="links">
       <div class="linkrow"><span>Repositorio</span><code>github.com/Stevien04/SmartInventory</code></div>
       <div class="linkrow"><span>Aplicación</span><code>smartinventory-app.onrender.com</code></div>
-      <div class="linkrow"><span>Métricas</span><code>smartinventory-api-29jb.onrender.com/metrics</code></div>
+      <div class="linkrow"><span>Estado de la API</span><code>smartinventory-api-29jb.onrender.com/api/health</code></div>
     </div>
     <p class="thanks">¡Muchas gracias! ¿Preguntas?</p>
   </div>

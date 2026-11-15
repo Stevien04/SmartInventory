@@ -31,10 +31,10 @@ export default function Login() {
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">SmartInventory</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Gestión inteligente con persistencia NoSQL políglota
+            Gestión inteligente con base de datos NoSQL documental
           </p>
           <div className="mt-3 inline-block bg-slate-800 border border-slate-700/60 rounded-full px-3 py-0.5 text-xs text-cyan-400">
-            MongoDB • Redis • Neo4j • Prometheus
+            Couchbase Capella • NoSQL
           </div>
         </div>
 
@@ -91,7 +91,7 @@ export default function Login() {
 
         <div className="mt-6 pt-4 border-t border-slate-800 text-center text-xs text-slate-500">
           <p>Credenciales de prueba cargadas por defecto.</p>
-          <p className="mt-0.5 text-slate-400">MongoDB Atlas · Redis Cloud · Neo4j AuraDB · Render CI/CD</p>
+          <p className="mt-0.5 text-slate-400">Couchbase Capella · Render · GitHub Actions</p>
         </div>
       </div>
     </div>

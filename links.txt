@@ -1,9 +1,8 @@
-# SmartInventory — Enlaces Oficiales de Entrega
+# SmartInventory — Enlaces de Entrega (Actividad Grupal 01-U2: NoSQL App development)
 
 - Repositorio Público GitHub: https://github.com/Stevien04/SmartInventory
 - Aplicación Web en Producción (Frontend en Render): https://smartinventory-app.onrender.com
 - API REST en Producción (Backend en Render): https://smartinventory-api-29jb.onrender.com/api/health
-- Endpoint de Métricas Prometheus: https://smartinventory-api-29jb.onrender.com/metrics
-- Artículo Técnico Publicado (Dev.to / Hashnode / Medium): https://dev.to/tu-usuario/construyendo-y-desplegando-smartinventory-con-mongodb-redis-neo4j-y-prometheus
-- Video Demostrativo (< 5 min en YouTube / TikTok / Facebook): https://www.youtube.com/watch?v=ewAhGkIk9Ts
-- Grupo de Telegram: Enlace enviado con éxito al canal del equipo y del curso.
+- Base de datos NoSQL: Couchbase Capella
+- Artículo Técnico Publicado (Dev.to / Hashnode / Medium): [pendiente]
+- Video Demostrativo (< 5 min): [pendiente]

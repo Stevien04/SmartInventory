@@ -1,67 +1,55 @@
-# 🎬 Guion de Video y Storyboard: SmartInventory (< 5 Minutos)
+# 🎬 Guion de Video: SmartInventory con Couchbase Capella (< 5 minutos)
 
-**Duración:** 4:30 minutos (Máximo permitido: 5:00 min)  
-**Plataforma:** YouTube / TikTok / Facebook / LinkedIn  
-**Stack Demostrado:** MongoDB Atlas, Redis Cloud, Neo4j AuraDB, Prometheus, React y Node.js  
+**Duración objetivo:** 4:30 minutos (máximo permitido: 5:00)
+**Plataforma:** YouTube / TikTok / Facebook
+**Stack:** Couchbase Capella, Node.js + Express, React + Vite, GitHub Actions, Render
 
 ---
 
-## ⏱️ Tabla de Tiempos y Estructura
+## ⏱️ Estructura
 
-| Segmento | Tiempo | Título del Bloque | Contenido Principal |
+| Segmento | Tiempo | Bloque | Contenido |
 | :---: | :---: | :--- | :--- |
-| **1** | 0:00 – 0:30 | Problema y Objetivo | Introducción de SmartInventory y presentación de la arquitectura NoSQL políglota. |
-| **2** | 0:30 – 1:15 | Arquitectura Políglota | Explicación del rol de MongoDB, Redis, Neo4j y Prometheus. |
-| **3** | 1:15 – 2:45 | Demostración en Vivo | Login JWT, catálogo, registro de movimiento sin stock negativo y respuesta ultrarrápida con Redis. |
-| **4** | 2:45 – 3:45 | CI/CD y Automatización | Ejecución de pruebas en GitHub Actions y deploy automático en Render. |
-| **5** | 3:45 – 4:30 | Observabilidad y Persistencia | Inspección de `/metrics` en Prometheus, datos en MongoDB Atlas y grafo en Neo4j. |
+| 1 | 0:00 – 0:30 | Problema y objetivo | Qué es SmartInventory y por qué el stock no puede descuadrarse |
+| 2 | 0:30 – 1:15 | Arquitectura y Couchbase | React → Express → Couchbase Capella; bucket, scope y colecciones |
+| 3 | 1:15 – 2:45 | Demo en vivo | Login, catálogo, salida rechazada, salida válida y alertas |
+| 4 | 2:45 – 3:30 | Los datos en Capella | Documentos JSON y una consulta SQL++ en el Query Workbench |
+| 5 | 3:30 – 4:30 | CI/CD y cierre | GitHub Actions → deploy en Render; `/api/health` conectado |
 
 ---
 
-## 📝 Guion Escena por Escena
+## 📝 Guion escena por escena
 
-### Escena 1: Introducción y Planteamiento (0:00 – 0:30)
-* **En pantalla:** Logo de SmartInventory con los 4 iconos: MongoDB, Redis, Neo4j y Prometheus.
-* **Voz en off:**
-  > "¡Hola a todos! Bienvenidos a la presentación de **SmartInventory**, un sistema inteligente de control de inventario full-stack diseñado bajo una arquitectura de **persistencia políglota y observabilidad de nivel empresarial**.
-  > En este proyecto combinamos la flexibilidad de **MongoDB**, la velocidad en memoria de **Redis**, el análisis de relaciones en **Neo4j** y la monitorización de métricas en tiempo real con **Prometheus**. A continuación, les mostraremos su funcionamiento y despliegue automatizado en la nube."
+### Escena 1 — Problema y objetivo (0:00 – 0:30)
+* **En pantalla:** portada de SmartInventory.
+* **Voz:**
+  > "Hola, les presentamos SmartInventory, un sistema web para controlar inventarios. La regla principal es simple: el stock nunca puede quedar en negativo, ni siquiera si dos personas registran una salida al mismo tiempo. Para lograrlo usamos una base de datos NoSQL en la nube: Couchbase Capella."
 
----
+### Escena 2 — Arquitectura (0:30 – 1:15)
+* **En pantalla:** diagrama React → API Express → Couchbase Capella, y la vista de colecciones en Capella.
+* **Voz:**
+  > "El frontend está hecho en React y el backend en Node.js con Express, ambos desplegados en Render. Los datos viven en Couchbase Capella: un bucket llamado smartinventory, un scope inventario y cinco colecciones: usuarios, categorías, proveedores, productos y movimientos. Cada documento es JSON y su clave es su propio ID, así que leer un producto es un acceso clave-valor directo."
 
-### Escena 2: Arquitectura del Sistema (0:30 – 1:15)
-* **En pantalla:** Diagrama interactivo conectando React, Express, MongoDB Atlas, Redis Cloud, Neo4j AuraDB y Prometheus.
-* **Voz en off:**
-  > "Nuestra arquitectura desacoplada utiliza una Single Page Application en React y Vite en el frontend, y una API REST en Node.js y Express en el backend.
-  > Cada tecnología NoSQL cumple un propósito específico: MongoDB maneja los documentos del catálogo y las transacciones de inventario; Redis acelera las consultas del dashboard sirviendo datos en submilisegundos; Neo4j modela el grafo de proveedores y productos; y Prometheus supervisa continuamente la salud de la aplicación mediante métricas de latencia y existencias."
+### Escena 3 — Demo en vivo (1:15 – 2:45)
+* **En pantalla:** `https://smartinventory-app.onrender.com`.
+  1. Iniciar sesión con `admin@smartinventory.com`.
+  2. Dashboard: productos activos, unidades, alertas.
+  3. Movimientos: intentar una **salida mayor al stock** → aparece "Stock insuficiente".
+  4. Registrar una salida válida → el stock baja y el producto pasa a **STOCK_BAJO**.
+* **Voz:**
+  > "Si intentamos despachar más unidades de las que hay, la API lo rechaza. Cuando la salida es válida, el stock del producto y el registro del movimiento se guardan en una única transacción ACID de Couchbase: o se guardan los dos, o ninguno. Y si dos usuarios mueven el mismo producto a la vez, Couchbase detecta el conflicto y la API repite la operación con el stock actualizado."
 
----
+### Escena 4 — Los datos en Capella (2:45 – 3:30)
+* **En pantalla:** Capella → Data Tools → Documents (colección `movimientos`, el movimiento recién creado con `stockAnterior` y `stockPosterior`). Luego Query, con:
+  ```sql
+  SELECT p.codigo, p.nombre, p.stockActual, p.stockMinimo
+  FROM productos AS p
+  WHERE p.estado = "ACTIVO" AND p.stockActual <= p.stockMinimo;
+  ```
+* **Voz:**
+  > "Aquí está el movimiento que acabamos de registrar, con el stock anterior y el posterior para auditoría. Y con SQL++, un SQL para documentos JSON, consultamos los productos con stock bajo directamente en Capella."
 
-### Escena 3: Demostración en Vivo en Producción (1:15 – 2:45)
-* **En pantalla:** Navegador en `https://smartinventory-app.onrender.com`.
-  - Login con JWT.
-  - Dashboard cargando métricas con el indicador `_source: Redis In-Memory Cache`.
-  - Intento de salida con cantidad mayor a existencias: se dispara el error *"Stock insuficiente. No se permite stock negativo"*.
-  - Salida válida: se procesa atómicamente, se invalida la caché de Redis y el dashboard se actualiza al instante con el nuevo estado de alerta.
-* **Voz en off:**
-  > "Aquí vemos la aplicación en vivo desde su URL pública en Render. Iniciamos sesión y vemos cómo el dashboard responde casi instantáneamente gracias a la caché de Redis.
-  > Si un operador intenta despachar más unidades de las disponibles, la transacción en MongoDB aborta inmediatamente, impidiendo cualquier inconsistencia de existencias. 
-  > Al registrar una salida válida, el movimiento se guarda, la caché de Redis se purga de forma reactiva y el sistema evalúa los umbrales de alerta en tiempo real."
-
----
-
-### Escena 4: CI/CD y Despliegue Automatizado (2:45 – 3:45)
-* **En pantalla:** Pestaña de GitHub Actions mostrando el workflow `deploy.yml`. Ejecución de tests del backend, build de Vite y llamada segura a los Deploy Webhooks de Render.
-* **Voz en off:**
-  > "El proceso de despliegue es 100% automatizado. Con GitHub Actions, cada `push` valida las pruebas unitarias que verifican los algoritmos de cálculo de stock.
-  > Únicamente cuando los tests son aprobados con éxito, el pipeline invoca los Webhooks de Render, actualizando la infraestructura sin tiempo de inactividad ni intervención humana."
-
----
-
-### Escena 5: Métricas en Prometheus, Grafo Neo4j y Cierre (3:45 – 4:30)
-* **En pantalla:**
-  - Pestaña con `/metrics`: mostrar `smartinventory_movimientos_total` incrementado.
-  - Interfaz de MongoDB Atlas con los documentos de la colección `movimientos`.
-  - Pestaña de Neo4j Browser mostrando los nodos `(:Proveedor)-[:SUMINISTRA]->(:Producto)`.
-* **Voz en off:**
-  > "Para finalizar, observamos el endpoint `/metrics` de Prometheus, donde vemos registradas las métricas de peticiones y transacciones exitosas. Además, comprobamos la persistencia en MongoDB y la red de suministros en Neo4j.
-  > Con esto demostramos la potencia de combinar múltiples motores NoSQL para crear soluciones robustas, escalables y observables. Todos los enlaces y el código fuente están disponibles en la descripción. ¡Muchas gracias!"
+### Escena 5 — CI/CD y cierre (3:30 – 4:30)
+* **En pantalla:** GitHub Actions con el workflow en verde; luego `/api/health` mostrando Couchbase `CONNECTED`.
+* **Voz:**
+  > "Cada push a main ejecuta las pruebas del backend y compila el frontend en GitHub Actions. Solo si todo pasa, se despliega automáticamente en Render. Las credenciales de Capella nunca están en el código: son variables de entorno. Así queda SmartInventory: una base NoSQL en la nube, un inventario que no se descuadra y un despliegue sin pasos manuales. Los enlaces están en la descripción. ¡Gracias!"

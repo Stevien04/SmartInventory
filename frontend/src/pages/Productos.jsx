@@ -80,7 +80,7 @@ export default function Productos({ userRole }) {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Catálogo de Productos</h1>
           <p className="text-sm text-slate-500">
-            Documentos JSON persistidos en MongoDB Atlas (colección: productos)
+            Documentos JSON persistidos en Couchbase Capella (colección: productos)
           </p>
         </div>
 
@@ -116,7 +116,7 @@ export default function Productos({ userRole }) {
       </div>
 
       {loading ? (
-        <div className="p-8 text-center text-slate-500">Cargando productos desde MongoDB...</div>
+        <div className="p-8 text-center text-slate-500">Cargando productos desde Couchbase...</div>
       ) : (
         <ProductTable
           productos={productosFiltrados}
@@ -233,7 +233,7 @@ export default function Productos({ userRole }) {
                   type="submit"
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
                 >
-                  Guardar en MongoDB
+                  Guardar en Couchbase
                 </button>
               </div>
             </form>

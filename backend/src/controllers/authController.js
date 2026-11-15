@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import Usuario from '../models/Usuario.js';
-import { isMongoActive } from '../config/mongodb.js';
+import * as repo from '../db/repositorio.js';
 
 export async function login(req, res, next) {
   try {
@@ -10,23 +9,7 @@ export async function login(req, res, next) {
       return res.status(400).json({ error: 'Email y contraseña requeridos' });
     }
 
-    let user = null;
-
-    if (isMongoActive()) {
-      user = await Usuario.findOne({ email: email.toLowerCase().trim() });
-    }
-
-    // Modo local / Fallback para desarrollo sin DB conectada
-    if (!user && email === 'admin@smartinventory.com' && password === 'Admin2026*!') {
-      user = {
-        id: 'USR-DEV-001',
-        nombre: 'Administrador Demo',
-        email: 'admin@smartinventory.com',
-        rol: 'ADMINISTRADOR',
-        passwordHash: bcrypt.hashSync('Admin2026*!', 10)
-      };
-    }
-
+    const user = await repo.buscarUno('usuarios', { email: email.toLowerCase().trim(), estado: 'ACTIVO' });
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }

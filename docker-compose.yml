@@ -1,56 +1,23 @@
-version: '3.8'
-
+# Couchbase Server local para desarrollo (en producción se usa Couchbase Capella).
+#
+#   docker compose up -d
+#   Abrir http://localhost:8091, crear el clúster (usuario Administrator),
+#   activar los servicios Data, Index y Query y crear el bucket "smartinventory".
+#   Luego, en backend/.env:
+#     COUCHBASE_CONNECTION_STRING=couchbase://localhost
+#     COUCHBASE_USERNAME=Administrator
+#     COUCHBASE_PASSWORD=<la contraseña que elegiste>
+#   y ejecutar: npm run db:init && npm run seed
 services:
-  # 1. Base de Datos Documental: MongoDB
-  mongodb:
-    image: mongo:7.0
-    container_name: smartinventory-mongodb
-    restart: always
+  couchbase:
+    image: couchbase/server:community-7.6.2
+    container_name: smartinventory-couchbase
+    restart: unless-stopped
     ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: smartinventory
+      - "8091-8097:8091-8097" # Consola web y servicios (Query, Index...)
+      - "11210:11210"         # Acceso clave-valor del SDK
     volumes:
-      - mongo_data:/data/db
-
-  # 2. Caché en Memoria: Redis
-  redis:
-    image: redis:7-alpine
-    container_name: smartinventory-redis
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
-  # 3. Base de Datos de Grafos: Neo4j
-  neo4j:
-    image: neo4j:5.18-community
-    container_name: smartinventory-neo4j
-    restart: always
-    ports:
-      - "7474:7474" # Interfaz Web
-      - "7687:7687" # Bolt Protocol
-    environment:
-      NEO4J_AUTH: neo4j/Password123*!
-    volumes:
-      - neo4j_data:/data
-
-  # 4. Monitoreo y Métricas: Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: smartinventory-prometheus
-    restart: always
-    ports:
-      - "9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway" # necesario en Linux para alcanzar la API local
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
+      - couchbase_data:/opt/couchbase/var
 
 volumes:
-  mongo_data:
-  redis_data:
-  neo4j_data:
-  prometheus_data:
+  couchbase_data:

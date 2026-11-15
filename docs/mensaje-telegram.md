@@ -1,40 +1,35 @@
 # 📱 Plantilla de Mensaje para el Grupo de Telegram
 
-Copia y pega este mensaje en el grupo de Telegram del curso o equipo docente:
+Copia y pega este mensaje en el grupo de Telegram del curso (completa los enlaces y los integrantes):
 
 ```text
-🚀 ¡Entrega de Proyecto: SmartInventory con Stack NoSQL Políglota y Observabilidad! 📦⚡
+🚀 Actividad Grupal 01-U2 — NoSQL App development: SmartInventory 📦
 
-Estimado docente y compañeros, compartimos los entregables oficiales de SmartInventory, implementado con una arquitectura de persistencia políglota y observabilidad integral:
+Compartimos los entregables de SmartInventory, un sistema de gestión de inventarios construido sobre Couchbase Capella (base de datos NoSQL documental en la nube):
 
-🔗 Enlaces del Proyecto:
-• Repositorio Público (GitHub): 
+🔗 Enlaces:
+• Repositorio público (GitHub):
   https://github.com/Stevien04/SmartInventory
 
-• Aplicación en Vivo (Render Static Site): 
+• Aplicación en vivo (Render):
   https://smartinventory-app.onrender.com
 
-• API REST en Producción (Render Web Service): 
+• API REST (Render):
   https://smartinventory-api-29jb.onrender.com/api/health
 
-• Métricas de Prometheus (/metrics): 
-  https://smartinventory-api-29jb.onrender.com/metrics
+• 📝 Artículo publicado (Dev.to / Hashnode / Medium):
+  [enlace del artículo]
 
-• 📝 Artículo Técnico Publicado (Dev.to / Hashnode / Medium): 
-  https://dev.to/tu-usuario/construyendo-y-desplegando-smartinventory-con-mongodb-redis-neo4j-y-prometheus
+• 🎥 Video demostrativo (< 5 min):
+  [enlace del video]
 
-• 🎥 Video Demostrativo (< 5 min en YouTube / Redes): 
-  https://www.youtube.com/watch?v=ewAhGkIk9Ts
+📌 Qué incluye:
+1. Couchbase Capella: documentos JSON, acceso clave-valor, consultas SQL++ y transacciones ACID para que el stock nunca quede en negativo.
+2. Backend Node.js + Express y frontend React + Vite.
+3. CI/CD: GitHub Actions ejecuta las pruebas y despliega automáticamente en Render.
 
-📌 Tecnologías Implementadas y su Rol:
-1. MongoDB Atlas: Colecciones maestras (productos, movimientos, usuarios) con transacciones ACID.
-2. Redis Cloud: Caché en memoria para el dashboard con respuestas en < 2ms e invalidación reactiva.
-3. Neo4j AuraDB: Grafo de cadena de suministro (:Proveedor)-[:SUMINISTRA]->(:Producto).
-4. Prometheus: Exposición y raspado de métricas (/metrics) para monitoreo de rendimiento y stock.
-5. CI/CD: Pipeline automatizado en GitHub Actions con despliegue sin intervención manual a Render.
-
-Integrantes del Equipo:
-- [Nombre Integrante 1] - [Rol / Contribución]
-- [Nombre Integrante 2] - [Rol / Contribución]
-- [Nombre Integrante 3] - [Rol / Contribución]
+Integrantes del equipo:
+- [Nombre Integrante 1]
+- [Nombre Integrante 2]
+- [Nombre Integrante 3]
 ```

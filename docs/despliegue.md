@@ -1,71 +1,55 @@
-# Guía de Conexión y Despliegue en la Nube — Stack NoSQL Políglota
+# Guía de Conexión y Despliegue en la Nube — Couchbase Capella + Render
 
-Esta guía te explica cómo configurar las 4 tecnologías en sus modalidades gratuitas en la nube y cómo conectarlas en Render **sin compartir tus credenciales en el chat**.
+Esta guía explica cómo crear la base de datos en Couchbase Capella (plan gratuito) y conectarla al backend en Render **sin compartir credenciales en el repositorio**.
 
 ---
 
-## 1. MongoDB Atlas (Base Documental Gratuita)
-1. Entra a [mongodb.com/atlas](https://www.mongodb.com/atlas) y crea una cuenta gratuita.
-2. Crea un **Cluster M0 Free**.
-3. En **Database Access**, crea un usuario y contraseña (ej. `app_user` / `TuPasswordSeguro123`).
-4. En **Network Access**, agrega la IP `0.0.0.0/0` para permitir la conexión desde Render.
-5. En **Connect > Drivers (Node.js)**, copia la cadena de conexión:
+## 1. Couchbase Capella (base de datos NoSQL en la nube)
+1. Entra a [cloud.couchbase.com](https://cloud.couchbase.com) y crea una cuenta gratuita.
+2. Crea un clúster del plan **Free** (operational cluster).
+3. En **Data Tools > Buckets**, crea el bucket `smartinventory`.
+4. En **Settings > Cluster Access**, crea un usuario de base de datos con acceso de lectura y escritura al bucket `smartinventory` (ej. `smartinventory_app`).
+5. En **Settings > Allowed IP Addresses**, agrega `0.0.0.0/0` para que Render pueda conectarse (Render no tiene IP fija en el plan gratuito).
+6. En **Connect**, copia la **Public Connection String**:
    ```text
-   mongodb+srv://app_user:<password>@cluster0.xxxxx.mongodb.net/smartinventory?retryWrites=true&w=majority
+   couchbases://cb.xxxxxxxx.cloud.couchbase.com
    ```
-6. Reemplaza `<password>` con tu contraseña real y asígnala a la variable `MONGODB_URI` en Render.
+
+## 2. Crear colecciones, índices y datos de ejemplo
+Desde tu PC, en la carpeta `backend/`:
+
+```bash
+cp .env.example .env      # y completa las variables COUCHBASE_*
+npm install
+npm run db:init           # crea el scope "inventario", las 5 colecciones y los índices
+npm run seed              # carga el administrador, categorías, proveedores y productos
+```
+
+Si tu usuario de base de datos no tiene permisos para crear colecciones o índices, ejecuta el archivo [`database/couchbase-setup.sql`](../database/couchbase-setup.sql) en **Data Tools > Query** de Capella y luego `npm run seed`.
+
+Usuario de prueba: `admin@smartinventory.com` / `Admin2026*!`.
 
 ---
 
-## 2. Upstash o Redis Cloud (Caché en Memoria Gratuita)
-1. Entra a [upstash.com](https://upstash.com) o [redis.com/try-free](https://redis.com/try-free).
-2. Crea una base de datos Redis gratuita (Plan Serverless Free).
-3. Copia el **Redis URL (ioredis)**:
-   ```text
-   redis://default:<password>@<host>:<port>
-   ```
-4. Asígnala a la variable `REDIS_URL` en Render.
-
----
-
-## 3. Neo4j AuraDB (Base de Datos de Grafos Gratuita)
-1. Entra a [neo4j.com/cloud/platform/aura-graph-database](https://neo4j.com/cloud/platform/aura-graph-database/).
-2. Crea una instancia gratuita **AuraDB Free**.
-3. Descarga el archivo de credenciales con la contraseña generada automáticamente.
-4. Copia la URI de conexión:
-   ```text
-   neo4j+s://<tu-instancia>.databases.neo4j.io
-   ```
-5. Asigna las variables en Render:
-   - `NEO4J_URI`: `neo4j+s://...`
-   - `NEO4J_USERNAME`: `neo4j`
-   - `NEO4J_PASSWORD`: `<tu-password>`
-
----
-
-## 4. Prometheus (Observabilidad y Métricas)
-1. El backend expone automáticamente el endpoint `/metrics`.
-2. Para verificar que funciona, abre en tu navegador o envía un `curl`:
-   ```bash
-   curl https://<tu-api-en-render>.onrender.com/metrics
-   ```
-3. Verás métricas en tiempo real como `smartinventory_movimientos_total`, `smartinventory_productos_stock_bajo_total` y `smartinventory_http_request_duration_seconds`.
-
----
-
-## 5. Variables de Entorno en Render (Web Service)
-En el panel de Render, agrega en **Environment Variables**:
+## 3. Variables de entorno en Render (Web Service del backend)
 
 | Variable | Valor |
 | :--- | :--- |
 | `NODE_ENV` | `production` |
-| `PORT` | `3000` |
-| `JWT_SECRET` | Genera una cadena aleatoria |
+| `JWT_SECRET` | Una cadena larga y aleatoria |
 | `FRONTEND_URL` | `https://<tu-frontend>.onrender.com` |
-| `MONGODB_URI` | Tu URI de MongoDB Atlas |
-| `REDIS_URL` | Tu URI de Redis Cloud |
-| `NEO4J_URI` | Tu URI de Neo4j AuraDB |
-| `NEO4J_USERNAME` | `neo4j` |
-| `NEO4J_PASSWORD` | Tu contraseña de AuraDB |
+| `COUCHBASE_CONNECTION_STRING` | `couchbases://cb.xxxxxxxx.cloud.couchbase.com` |
+| `COUCHBASE_USERNAME` | Usuario de base de datos de Capella |
+| `COUCHBASE_PASSWORD` | Contraseña de ese usuario |
+| `COUCHBASE_BUCKET` | `smartinventory` |
+| `COUCHBASE_SCOPE` | `inventario` |
+| `COUCHBASE_TX_DURABILITY` | `none` (plan gratuito de un nodo) |
 
-> 🔒 **Seguridad:** El backend cuenta con un **modo adaptativo inteligente**: si alguna variable no está configurada, el sistema continúa funcionando localmente sin detenerse ni fallar.
+Elimina las variables antiguas (`MONGODB_URI`, `REDIS_URL`, `NEO4J_*`) si siguen configuradas.
+
+## 4. Despliegue automatizado
+1. Cada push a `main` ejecuta el workflow `.github/workflows/deploy.yml`: instala dependencias, ejecuta las pruebas del backend y compila el frontend.
+2. Si todo pasa, llama a los deploy hooks de Render (secrets `RENDER_BACKEND_DEPLOY_HOOK` y `RENDER_FRONTEND_DEPLOY_HOOK`).
+3. Comprueba en `https://<tu-api>.onrender.com/api/health` que aparezca `"estado": "CONNECTED"`.
+
+> 🔒 Si las variables `COUCHBASE_*` no están configuradas, la API no se cae: arranca con datos de ejemplo en memoria y `/api/health` lo indica.

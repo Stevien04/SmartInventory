@@ -1,9 +1,9 @@
 # SmartInventory — Sistema Inteligente de Gestión y Control de Inventarios
 
 ## 1. Objetivo
-Construir una aplicación web full stack para administrar inventarios con una arquitectura **NoSQL Políglota** y observabilidad continua, registrar entradas y salidas, generar alertas de stock bajo y consultar reportes. El proyecto cuenta con repositorio público, CI/CD y despliegue en la nube.
+Construir una aplicación web full stack para administrar inventarios sobre una base de datos **NoSQL documental (Couchbase Capella)**: registrar entradas y salidas, generar alertas de stock bajo y consultar reportes. El proyecto cuenta con repositorio público, CI/CD y despliegue en la nube.
 
-> **Stack NoSQL Implementado:** MongoDB (Documentos), Redis (Caché en memoria), Neo4j (Grafos de suministro) y Prometheus (Métricas en tiempo real).
+> **Base de datos NoSQL:** Couchbase Capella — documentos JSON, acceso clave-valor, consultas SQL++ y transacciones ACID multi-documento.
 
 ## 2. Stack tecnológico
 
@@ -11,26 +11,23 @@ Construir una aplicación web full stack para administrar inventarios con una ar
 | --- | --- | --- |
 | Frontend | React 18, Vite, Tailwind CSS | Interfaz reactiva y moderna |
 | Backend | Node.js, Express | API REST, lógica de negocio y seguridad |
-| Base Documental | MongoDB Atlas | Catálogo maestro de productos y transacciones |
-| Caché en Memoria | Redis Cloud | Aceleración de consultas del dashboard (< 2ms) |
-| Base de Grafos | Neo4j AuraDB | Grafo de relaciones proveedor-producto-categoría |
-| Observabilidad | Prometheus (`/metrics`) | Métricas del sistema y gauges de stock |
+| Base de datos NoSQL | Couchbase Capella | Catálogo, usuarios y movimientos en documentos JSON |
 | Autenticación | JWT y bcrypt | Control de acceso basado en roles (RBAC) |
 | CI/CD | GitHub Actions | Pipeline automatizado de test, build y deploy |
 | Despliegue Cloud | Render | Static Site (Frontend) y Web Service (API) |
 
-## 3. Arquitectura Políglota
+## 3. Arquitectura
 
 ```text
        [ Navegador del Usuario (React + Vite + Tailwind CSS) ]
                                  │
                                  ▼  (HTTPS / REST / JWT)
              [ Backend: Node.js + Express API ]
-       ┌───────────────┬───────────────────┬─────────────────┐
-       │               │                   │                 │
-       ▼               ▼                   ▼                 ▼
- [ MongoDB Atlas ] [ Redis Cloud ] [ Neo4j AuraDB ]   [ Prometheus ]
-  (Documentos)      (Caché <2ms)     (Grafos Cypher)   (Métricas /metrics)
+                                 │
+                                 ▼  (SDK de Couchbase, TLS)
+                     [ Couchbase Capella ]
+          bucket smartinventory › scope inventario
+   usuarios · categorias · proveedores · productos · movimientos
 
 GitHub (push/PR) -> GitHub Actions (test/build) -> Webhook Deploy Render
 ```
@@ -68,8 +65,9 @@ GitHub (push/PR) -> GitHub Actions (test/build) -> Webhook Deploy Render
 ### 5.5 Movimientos
 - Registrar entradas, salidas y ajustes con fecha, producto, cantidad, motivo y usuario responsable.
 - Impedir que una salida genere stock negativo.
-- Guardar el movimiento y actualizar el stock **de forma atómica**, usando una transacción de MongoDB (sesión de Mongoose).
-- Prevenir registros duplicados por reintentos mediante un identificador único de operación.
+- Guardar el movimiento y actualizar el stock **de forma atómica**, con una transacción ACID de Couchbase.
+- Si dos usuarios mueven el mismo producto a la vez, Couchbase detecta el conflicto (CAS) y la API repite la operación con el stock actualizado.
+- Cada movimiento guarda un identificador de operación (`operacionId`) para auditoría.
 
 ### 5.6 Alertas inteligentes
 - Marcar **AGOTADO** cuando `stockActual === 0`.
@@ -85,12 +83,12 @@ GitHub (push/PR) -> GitHub Actions (test/build) -> Webhook Deploy Render
 
 ## 6. Modelo de datos
 
-- **MongoDB** (base `smartinventory`): colecciones `usuarios`, `productos`, `categorias`, `proveedores` y `movimientos`. Es la fuente de verdad.
-- **Redis**: clave `cache:dashboard_resumen` con TTL de 60 s, invalidada en cada cambio de inventario.
-- **Neo4j**: `(:Proveedor)-[:SUMINISTRA]->(:Producto)-[:PERTENECE_A]->(:Categoria)`.
+- **Couchbase Capella**: bucket `smartinventory`, scope `inventario` y colecciones `usuarios`, `productos`, `categorias`, `proveedores` y `movimientos`.
+- Cada documento se guarda con su `id` como clave (por ejemplo `PROD-001`), lo que permite leerlo por clave-valor sin consultas.
+- Los listados y filtros usan **SQL++** con índices secundarios.
 - Las referencias entre documentos son por ID (`categoriaId`, `proveedorId`) y se validan en el backend.
 
-Detalle completo en [`database/collections.md`](database/collections.md); índices en [`database/indexes.mongodb.js`](database/indexes.mongodb.js); consultas del grafo en [`database/grafo-neo4j.cypher`](database/grafo-neo4j.cypher).
+Detalle completo en [`database/collections.md`](database/collections.md); colecciones, índices y consultas de ejemplo en [`database/couchbase-setup.sql`](database/couchbase-setup.sql).
 
 ### Ejemplo: documento de producto
 
@@ -108,7 +106,8 @@ Detalle completo en [`database/collections.md`](database/collections.md); índic
   "stockMinimo": 5,
   "unidadMedida": "unidad",
   "estado": "ACTIVO",
-  "creadoEn": "2026-10-30T12:00:00Z"
+  "createdAt": "2026-10-30T12:00:00Z",
+  "updatedAt": "2026-10-30T12:00:00Z"
 }
 ```
 
@@ -143,7 +142,7 @@ Detalle completo en [`database/collections.md`](database/collections.md); índic
 | GET | `/api/alertas` | Productos con alertas |
 | GET | `/api/dashboard/resumen` | Indicadores de inventario |
 | GET | `/api/reportes/inventario` | Resumen para reporte |
-| GET | `/api/health` | Comprobación de servicio |
+| GET | `/api/health` | Estado del servicio y de Couchbase |
 
 Las rutas privadas requieren autenticación. Aplicar validación de entrada, manejo centralizado de errores, límites de solicitudes en login y CORS limitado al origen del frontend.
 
@@ -183,11 +182,14 @@ SmartInventory/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   ├── mongodb.js
-│   │   │   ├── redis.js
-│   │   │   ├── neo4j.js
-│   │   │   └── prometheus.js
-│   │   ├── models/
+│   │   │   └── couchbase.js
+│   │   ├── data/
+│   │   │   └── datosIniciales.js
+│   │   ├── db/
+│   │   │   ├── repositorio.js
+│   │   │   ├── couchbaseStore.js
+│   │   │   ├── memoria.js
+│   │   │   └── errores.js
 │   │   ├── controllers/
 │   │   │   ├── authController.js
 │   │   │   ├── productoController.js
@@ -203,7 +205,6 @@ SmartInventory/
 │   │   │   └── movimientoRoutes.js
 │   │   ├── services/
 │   │   │   ├── stockService.js
-│   │   │   ├── grafoService.js
 │   │   │   └── alertaService.js
 │   │   ├── middleware/
 │   │   │   ├── authMiddleware.js
@@ -212,16 +213,14 @@ SmartInventory/
 │   │   ├── app.js
 │   │   └── server.js
 │   ├── scripts/
-│   │   ├── seedAdmin.js
-│   │   └── seedMongoDB.js
+│   │   ├── initCouchbase.js
+│   │   └── seedCouchbase.js
 │   ├── tests/
 │   ├── .env.example
 │   └── package.json
 ├── database/
 │   ├── collections.md
-│   ├── indexes.mongodb.js
-│   ├── grafo-neo4j.cypher
-│   └── sample-data.json
+│   └── couchbase-setup.sql
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml
@@ -230,7 +229,6 @@ SmartInventory/
 │   ├── api.md
 │   └── despliegue.md
 ├── docker-compose.yml
-├── prometheus.yml
 ├── .gitignore
 └── README.md
 ```
@@ -250,14 +248,26 @@ PORT=3000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 JWT_SECRET=REPLACE_WITH_A_LONG_RANDOM_SECRET
-MONGODB_URI=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/smartinventory
-REDIS_URL=redis://default:<password>@<host>:<port>
-NEO4J_URI=neo4j+s://<instancia>.databases.neo4j.io
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=<password>
+COUCHBASE_CONNECTION_STRING=couchbases://cb.<endpoint>.cloud.couchbase.com
+COUCHBASE_USERNAME=<usuario-db>
+COUCHBASE_PASSWORD=<password-db>
+COUCHBASE_BUCKET=smartinventory
+COUCHBASE_SCOPE=inventario
+COUCHBASE_TX_DURABILITY=none
 ```
 
-Para desarrollo local, `docker compose up -d` levanta MongoDB, Redis, Neo4j y Prometheus; en ese caso usa `MONGODB_URI=mongodb://localhost:27017/smartinventory`, `REDIS_URL=redis://localhost:6379` y `NEO4J_URI=bolt://localhost:7687`. Ojo: los movimientos usan transacciones de MongoDB, que requieren un replica set. Atlas ya lo trae; el contenedor local de `docker-compose.yml` es un nodo suelto, así que para registrar movimientos en local conviene apuntar a Atlas.
+### Puesta en marcha
+
+```bash
+cd backend
+cp .env.example .env    # completar las variables COUCHBASE_*
+npm install
+npm run db:init         # crea scope, colecciones e índices en Couchbase
+npm run seed            # carga datos de ejemplo (admin@smartinventory.com / Admin2026*!)
+npm run dev
+```
+
+Sin las variables `COUCHBASE_*` la API arranca igual, con datos de ejemplo en memoria. Para desarrollo local con Couchbase, `docker compose up -d` levanta Couchbase Server (instrucciones en `docker-compose.yml`).
 
 Nunca subir archivos `.env` reales a GitHub. Las variables de producción se configuran en Render; los tokens/hook URLs para despliegue se guardan como GitHub Actions Secrets.
 
@@ -267,14 +277,14 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 2. Configurar GitHub Actions para ejecutar instalación, lint, pruebas y build en cada pull request y push a `main`.
 3. Desplegar el frontend como sitio estático en Render.
 4. Desplegar el backend como servicio web en Render.
-5. Crear las instancias en la nube (MongoDB Atlas, Redis Cloud, Neo4j AuraDB) y cargar sus credenciales como variables de entorno del Web Service en Render. En Atlas, permitir el acceso desde las IP de Render.
+5. Crear el clúster en Couchbase Capella, el bucket `smartinventory` y un usuario de base de datos; permitir el acceso desde las IP de Render y cargar las variables `COUCHBASE_*` en el Web Service. Guía paso a paso en [`docs/despliegue.md`](docs/despliegue.md).
 6. Activar despliegues de Render desde GitHub Actions **solo cuando las pruebas pasen**; evitar despliegues dobles desactivando el autodeploy independiente si se usa un deploy hook.
-7. Confirmar en `/api/health` que los cuatro componentes aparecen conectados y que los datos persisten en MongoDB Atlas.
+7. Confirmar en `/api/health` que Couchbase aparece `CONNECTED`.
 
 
 - **Repositorio GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory) 
 - **Aplicación desplegada (Frontend Render):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
 - **API REST desplegada (Backend Render):** [https://smartinventory-api-29jb.onrender.com/api/health](https://smartinventory-api-29jb.onrender.com/api/health)
-- **Video público (3:30):** [https://www.youtube.com/watch?v=ewAhGkIk9Ts](https://www.youtube.com/watch?v=ewAhGkIk9Ts)
+- **Video público (< 5 min):** _pendiente: enlace del nuevo video con Couchbase_
 
 

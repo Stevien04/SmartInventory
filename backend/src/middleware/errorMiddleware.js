@@ -1,8 +1,11 @@
 export function errorMiddleware(err, req, res, next) {
-  console.error('❌ Error capturado en Middleware:', err);
   const statusCode = err.status || 500;
+  // Los errores de negocio (400/404/409) son esperables; solo se registran los fallos internos.
+  if (statusCode >= 500) console.error('❌ Error interno:', err);
   res.status(statusCode).json({
-    error: err.message || 'Error interno del servidor',
+    error: statusCode >= 500 && process.env.NODE_ENV === 'production'
+      ? 'Error interno del servidor'
+      : err.message || 'Error interno del servidor',
     timestamp: new Date().toISOString()
   });
 }
