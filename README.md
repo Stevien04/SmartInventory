@@ -287,19 +287,9 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 
 ## 12. Entregables académicos
 
-- **Repositorio GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory) (Ver archivo `links.txt`)
+- **Repositorio GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory) 
 - **Aplicación desplegada (Frontend Render):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
 - **API REST desplegada (Backend Render):** [https://smartinventory-api-29jb.onrender.com/api/health](https://smartinventory-api-29jb.onrender.com/api/health)
-- **Artículo en Dev.to, Medium o Hashnode:** [docs/articulo-publicacion.md](docs/articulo-publicacion.md) (Ver borrador listo para publicar con metadata y tags)
 - **Video público (3:30):** [https://www.youtube.com/watch?v=ewAhGkIk9Ts](https://www.youtube.com/watch?v=ewAhGkIk9Ts)
-- 
 
-### Guion sugerido del video (4:30–5:00)
 
-| Tiempo | Contenido |
-| --- | --- |
-| 0:00–0:30 | Problema y objetivo: por qué un solo motor no basta |
-| 0:30–1:15 | Arquitectura políglota: MongoDB, Redis, Neo4j y Prometheus |
-| 1:15–2:45 | Demostración del sistema (Login, Creación de producto, Control anti-stock negativo, Alertas) |
-| 2:45–3:45 | GitHub Actions y despliegue (CI/CD automático a Render) |
-| 3:45–4:30 | `/api/health`, `/metrics`, grafo en Neo4j y conclusiones |
