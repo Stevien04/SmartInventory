@@ -271,21 +271,6 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 6. Activar despliegues de Render desde GitHub Actions **solo cuando las pruebas pasen**; evitar despliegues dobles desactivando el autodeploy independiente si se usa un deploy hook.
 7. Confirmar en `/api/health` que los cuatro componentes aparecen conectados y que los datos persisten en MongoDB Atlas.
 
-## 11. Criterios de aceptación
-
-- [x] Login válido y roles protegidos.
-- [x] CRUD de productos, categorías y proveedores funcional.
-- [x] Entradas y salidas actualizan el stock correctamente.
-- [x] Una salida no permite inventario negativo.
-- [x] Las alertas de stock bajo aparecen automáticamente.
-- [x] Dashboard y reportes muestran datos reales.
-- [x] Datos persistidos en MongoDB Atlas, con caché en Redis y grafo en Neo4j (no arreglos estáticos ni almacenamiento local).
-- [x] Código publicado en un repositorio público.
-- [x] GitHub Actions ejecuta pruebas y despliega automáticamente.
-- [x] Frontend y API accesibles mediante URLs públicas.
-- [x] README contiene instrucciones de instalación, arquitectura y enlaces finales.
-
-## 12. Entregables académicos
 
 - **Repositorio GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory) 
 - **Aplicación desplegada (Frontend Render):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
