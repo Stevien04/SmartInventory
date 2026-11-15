@@ -285,6 +285,6 @@ Nunca subir archivos `.env` reales a GitHub. Las variables de producción se con
 - **Repositorio GitHub:** [https://github.com/Stevien04/SmartInventory](https://github.com/Stevien04/SmartInventory) 
 - **Aplicación desplegada (Frontend Render):** [https://smartinventory-app.onrender.com](https://smartinventory-app.onrender.com)
 - **API REST desplegada (Backend Render):** [https://smartinventory-api-29jb.onrender.com/api/health](https://smartinventory-api-29jb.onrender.com/api/health)
-- **Video público (< 5 min):** _pendiente: enlace del nuevo video con Couchbase_
+- **Video público (3 min):** [https://youtu.be/g1ksH2ASxBw](https://youtu.be/g1ksH2ASxBw)
 
 

@@ -21,7 +21,7 @@ Compartimos los entregables de SmartInventory, un sistema de gestión de inventa
   [enlace del artículo]
 
 • 🎥 Video demostrativo (< 5 min):
-  [enlace del video]
+  https://youtu.be/g1ksH2ASxBw
 
 📌 Qué incluye:
 1. Couchbase Capella: documentos JSON, acceso clave-valor, consultas SQL++ y transacciones ACID para que el stock nunca quede en negativo.

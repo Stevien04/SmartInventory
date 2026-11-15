@@ -16,9 +16,17 @@ Un inventario parece un problema sencillo: productos, entradas y salidas. Pero e
 - **Repositorio público:** https://github.com/Stevien04/SmartInventory
 - **Aplicación:** https://smartinventory-app.onrender.com
 - **Estado de la API:** https://smartinventory-api-29jb.onrender.com/api/health
-- **Video demostrativo (< 5 min):** _[enlace del video]_
+- **Video demostrativo (3 min):** https://youtu.be/g1ksH2ASxBw
 
 > Los servicios están en el plan gratuito de Render: la primera petición después de un rato sin uso puede tardar unos 30 segundos mientras el servidor despierta.
+
+---
+
+## Video demostrativo
+
+En 3 minutos: la arquitectura, la aplicación funcionando en Render, el rechazo de una salida sin stock, los documentos en Couchbase con una consulta SQL++ y el pipeline de CI/CD.
+
+[![Video demostrativo de SmartInventory](https://img.youtube.com/vi/g1ksH2ASxBw/hqdefault.jpg)](https://youtu.be/g1ksH2ASxBw)
 
 ---
 

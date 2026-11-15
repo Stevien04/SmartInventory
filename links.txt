@@ -5,4 +5,4 @@
 - API REST en Producción (Backend en Render): https://smartinventory-api-29jb.onrender.com/api/health
 - Base de datos NoSQL: Couchbase Capella
 - Artículo Técnico Publicado (Dev.to / Hashnode / Medium): [pendiente]
-- Video Demostrativo (< 5 min): [pendiente]
+- Video Demostrativo (3 min): https://youtu.be/g1ksH2ASxBw
